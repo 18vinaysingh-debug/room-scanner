@@ -5,536 +5,695 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Room Health Scanner</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#101418">
+<meta name="theme-color" content="#0c1015">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* VOICE: calm field-inspector, plain words
-   IDEA: a handheld inspection meter with a printed report slip
-   PICTURE: large live gauge dial that the readings drive
-   COLOUR and TYPE: white, ink #101418, yellow #ffd84a slab for the key figure; Manrope
-   LAYOUT: room name, gauge, test buttons, checklist, report slip, saved rooms */
-:root{color-scheme:light dark;--bg:light-dark(#ffffff,#101418);--ink:light-dark(#101418,#eef1f4);--mute:light-dark(#5a6470,#9aa5b1);--line:light-dark(#e3e7ec,#26303a);--card:light-dark(#f5f7f9,#171e26);--y:#ffd84a;--good:#1f9d55;--warn:#e08a00;--bad:#d64545}
+/* VOICE: a precise, friendly field instrument; plain words, one action at a time
+   IDEA: a handheld multi-sensor meter with a radar display and a printed report
+   PICTURE: room health radar with score ring; becomes a live signal scope while scanning
+   COLOUR and TYPE: instrument black / clean white, cyan signal accent, green-amber-red status only; Sora numbers, Inter text
+   LAYOUT: one column, hero instrument on top, cards below, fixed bottom navigation */
+:root{color-scheme:light dark;
+--bg:light-dark(#eef2f5,#0b0f14);--panel:light-dark(#ffffff,#131a22);--panel2:light-dark(#f5f8fa,#18212b);
+--ink:light-dark(#0f1419,#e9eff4);--mute:light-dark(#5b6773,#8d9aa7);--line:light-dark(#dde4ea,#243040);
+--acc:#14b8dc;--good:#1fb67a;--warn:#f0a020;--bad:#e5484d;--grid:light-dark(#d5dde4,#26323f)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}
-.wrap{max-width:760px;margin:0 auto;padding:20px max(4vw,16px) 60px}
-h1{font-size:clamp(28px,7vw,40px);line-height:1.05;margin:6px 0 4px;text-wrap:balance}
-h2{font-size:20px;margin:28px 0 10px}
-.sub{color:var(--mute);margin:0 0 16px}
-input[type=text]{width:100%;font:16px Manrope,sans-serif;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
-input:focus-visible,button:focus-visible{outline:3px solid var(--y);outline-offset:2px}
-.meter{background:var(--card);border-radius:20px;padding:18px;margin-top:14px;display:grid;gap:8px;justify-items:center}
-.meter svg{width:min(320px,80vw);height:auto}
-.mlabel{font-weight:700;font-size:18px;text-align:center}
-.mnote{color:var(--mute);font-size:14px;text-align:center;max-width:46ch}
-.bar{width:100%;height:8px;background:var(--line);border-radius:6px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--ink);transition:width .2s linear}
-.btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
-button{font:700 15px Manrope,sans-serif;min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 12px;cursor:pointer}
-button.main{grid-column:1/-1;background:var(--ink);color:var(--bg);border-color:var(--ink);font-size:16px}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip;padding-bottom:84px}
+.wrap{max-width:720px;margin:0 auto;padding:14px max(4vw,14px) 30px}
+h1{font:800 22px/1.1 Sora,sans-serif;margin:0}
+h2{font:700 19px/1.2 Sora,sans-serif;margin:26px 0 10px}
+.top{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
+.top small{color:var(--mute);font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block;margin-right:6px;box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 20%,transparent)}
+.dot.live{background:var(--acc);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--acc) 5%,transparent)}}
+input[type=text],input[type=number]{width:100%;font:16px Inter,sans-serif;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;margin-top:12px;position:relative;overflow:hidden}
+.heroGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:12px;align-items:center}
+@media(max-width:560px){.heroGrid{grid-template-columns:1fr}}
+.ring{position:relative;width:min(190px,56vw);aspect-ratio:1;margin:0 auto}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .in{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.big{font:800 clamp(44px,13vw,58px)/1 Sora,sans-serif;font-variant-numeric:tabular-nums}
+.band{font:700 15px Sora,sans-serif;margin-top:4px}
+.radar svg{width:100%;height:auto;display:block}
+.live{display:none}
+.hero.scanning .idle{display:none}.hero.scanning .live{display:block}
+.lhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.lstep{font-size:13px;color:var(--acc);font-weight:600}
+.lname{font:700 20px Sora,sans-serif}
+.lval{font:800 clamp(40px,12vw,56px)/1 Sora,sans-serif;font-variant-numeric:tabular-nums;margin:6px 0 2px}
+.lhint{color:var(--mute);font-size:15px;margin:0 0 10px}
+.scope{position:relative;height:170px;background:var(--panel2);border-radius:14px;border:1px solid var(--line)}
+.scope canvas{position:absolute;inset:0;width:100%;height:100%}
+.pbar{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:12px}
+.pbar i{display:block;height:100%;width:0;background:var(--acc)}
+.count{position:absolute;inset:0;display:none;place-items:center;text-align:center;background:color-mix(in srgb,var(--panel) 94%,transparent);padding:20px;z-index:2}
+.count.on{display:grid}
+.count b{font:800 72px/1 Sora,sans-serif;color:var(--acc)}
+.count p{font-size:17px;max-width:30ch;margin:10px auto 0}
+button{font:600 15px Inter,sans-serif;min-height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);padding:10px 14px;cursor:pointer}
 button:disabled{opacity:.45}
-.tests{display:grid;gap:8px;margin-top:14px}
-.t{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px}
-.t b{font-size:15px}.t span{font-size:14px;color:var(--mute)}
-.t em{font-style:normal;font-weight:700;white-space:nowrap;align-self:center;grid-row:1/3;grid-column:2}
-.ok{color:var(--good)}.wn{color:var(--warn)}.bd{color:var(--bad)}.na{color:var(--mute)}
-.chk label{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
-.chk input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:#101418}
-.slip{border:1.5px solid var(--ink);border-radius:16px;padding:18px;margin-top:10px}
-.score{display:inline-block;background:var(--y);color:#101418;font-weight:800;font-size:clamp(40px,12vw,64px);line-height:1;padding:8px 16px;border-radius:10px}
-.verdict{font-size:20px;font-weight:800;margin:12px 0 6px}
-.slip ul{padding-left:20px;margin:8px 0}.slip li{margin:6px 0}
+.go{width:100%;margin-top:14px;background:var(--acc);border-color:var(--acc);color:#04222b;font:700 17px Sora,sans-serif;min-height:56px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:380px){.cards{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;text-align:left;display:grid;gap:4px;min-height:0;font-weight:400}
+.card .n{font-size:14px;color:var(--mute);font-weight:600}
+.card .v{font:700 22px Sora,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip{display:inline-block;font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap;justify-self:start}
+.g0{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.g1{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.g2{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.gn{background:var(--panel2);color:var(--mute)}
+.meterbar{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--good) 0 33%,var(--warn) 33% 66%,var(--bad) 66%);position:relative;margin-top:4px;opacity:.85}
+.meterbar i{position:absolute;top:-4px;width:4px;height:14px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.card .m{font-size:13px;color:var(--mute);display:none}
+.card.open .m{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.tog{min-height:44px;border-radius:999px;font-size:14px;padding:8px 14px;font-weight:500}
+.tog[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.report{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+.verdict{font:800 24px/1.15 Sora,sans-serif;margin:6px 0}
+.flag{background:color-mix(in srgb,var(--bad) 14%,transparent);border:1px solid var(--bad);border-radius:12px;padding:10px 12px;margin:10px 0;font-weight:600}
+.ins{border-left:3px solid var(--acc);padding:4px 0 4px 12px;margin:10px 0}
+ol{padding-left:22px;margin:8px 0}li{margin:6px 0}
 .small{font-size:13px;color:var(--mute)}
 .rooms{display:grid;gap:8px}
-.room{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 14px;border:1.5px solid var(--line);border-radius:12px}
-.room b{overflow-wrap:anywhere}.room .s{font-weight:800}
-.room button{min-height:40px;padding:6px 10px;font-size:13px}
-.tabs{display:flex;gap:6px;margin:0 0 14px;overflow-x:auto}
-.tabs button{flex:1 0 auto;min-height:44px;font-size:14px;border-radius:999px}
-.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.room{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.room b{overflow-wrap:anywhere}.room .s{font:800 22px Sora,sans-serif}
+.room button{min-height:40px;font-size:13px;padding:6px 10px}
+nav.bn{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px max(env(safe-area-inset-left),6px) max(env(safe-area-inset-bottom),6px);z-index:5}
+nav.bn button{border:0;background:none;min-height:56px;display:grid;justify-items:center;gap:2px;font-size:11.5px;color:var(--mute);padding:4px}
+nav.bn button svg{width:24px;height:24px}
+nav.bn button.on{color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:13px;color:var(--mute);font-weight:600}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.gcard h3{font:700 17px Sora,sans-serif;margin:0 0 4px}
 .opts{display:grid;gap:10px;margin:8px 0}
 .opts label{display:grid;gap:4px;font-weight:600;font-size:15px}
 .opts label.row{display:flex;gap:10px;align-items:center;font-weight:400}
-.opts input[type=checkbox]{width:22px;height:22px;flex:none}
-select{font:16px Manrope,sans-serif;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:46px}
-.nbig{font-size:clamp(36px,11vw,56px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.opts input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:var(--acc)}
+select{font:16px Inter,sans-serif;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);min-height:46px}
 .tl{display:grid;gap:8px}
-.ev{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px}
-.ev .tm{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ev .cz{font-size:14px;color:var(--mute)}
+.ev{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.ev .tm{font:700 14px Sora,sans-serif;white-space:nowrap}
+.ev .cz{font-size:13px;color:var(--mute)}
 .ev button{min-height:40px;padding:6px 10px;font-size:13px}
-.hrs{display:flex;gap:3px;align-items:flex-end;height:70px;margin:10px 0 2px}
-.hrs i{flex:1;background:var(--ink);border-radius:3px 3px 0 0;min-height:2px}
-.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none}
+.nbig{font:800 clamp(38px,11vw,54px)/1 Sora,sans-serif;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
 .toast.on{opacity:1}
-@media(prefers-reduced-motion:reduce){.bar i,#needle{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.dot.live{animation:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Room Health Scanner</h1>
-<p class="sub">Checks the real things that make a room feel heavy or uneasy: electrical fields, hum and noise, light, vibration and air.</p>
+<div class="top"><h1>Room Health Scanner</h1><small id="stat"><span class="dot" id="sdot"></span>Ready</small></div>
 
-<nav class="tabs" id="tabs">
-<button data-p="scan" class="on">Room scan</button><button data-p="night">Night watch</button><button data-p="tools">More tools</button>
-</nav>
-
+<!-- ============ SCAN ============ -->
 <section id="p-scan">
-<input type="text" id="room" placeholder="Room name, e.g. Bedroom, Flat 302 hall" maxlength="40">
+<input type="text" id="room" placeholder="Room name, e.g. Bedroom" maxlength="40" aria-label="Room name">
 
-<div class="meter">
-<svg viewBox="0 0 300 180" aria-hidden="true">
-<path d="M30 160 A120 120 0 0 1 270 160" fill="none" stroke="var(--line)" stroke-width="18" stroke-linecap="round"/>
-<path d="M30 160 A120 120 0 0 1 90 56" fill="none" stroke="var(--good)" stroke-width="18" stroke-linecap="round"/>
-<path d="M98 51 A120 120 0 0 1 202 51" fill="none" stroke="var(--warn)" stroke-width="18"/>
-<path d="M210 56 A120 120 0 0 1 270 160" fill="none" stroke="var(--bad)" stroke-width="18" stroke-linecap="round"/>
-<g id="needle" style="transform-origin:150px 160px;transform:rotate(-90deg);transition:transform .25s">
-<line x1="150" y1="160" x2="150" y2="58" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>
-</g>
-<circle cx="150" cy="160" r="11" fill="var(--ink)"/>
-<text id="gval" x="150" y="130" text-anchor="middle" font-size="26" font-weight="800" fill="var(--ink)" font-family="Manrope,sans-serif">Ready</text>
-</svg>
-<div class="mlabel" id="mlabel">Pick a test or run the full scan</div>
-<div class="mnote" id="mnote">Stand in the middle of the room. Each test takes about 12 seconds.</div>
-<div class="bar"><i id="prog"></i></div>
+<div class="hero" id="hero">
+ <div class="idle heroGrid">
+  <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/><circle id="ringArc" cx="60" cy="60" r="52" fill="none" stroke="var(--acc)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 999"/></svg>
+   <div class="in"><div><div class="big" id="score">--</div><div class="small">health score</div><div class="band" id="bandTxt">Not scanned</div></div></div></div>
+  <div class="radar"><svg id="radar" viewBox="-60 -20 420 340" role="img" aria-label="Room health radar"></svg></div>
+ </div>
+ <div class="live">
+  <div class="lhead"><span class="lname" id="lName">Scanning</span><span class="lstep" id="lStep">Step 1 of 4</span></div>
+  <div class="lval" id="lVal">--</div>
+  <p class="lhint" id="lHint">Hold still</p>
+  <div class="scope"><canvas id="scope"></canvas></div>
+  <div class="pbar"><i id="prog"></i></div>
+ </div>
+ <div class="count" id="count"><div><b id="cNum">3</b><p id="cTxt">Get ready</p></div></div>
 </div>
 
-<div class="btns">
-<button class="main" id="bAll">Run full room scan</button>
-<button id="bEmf">EMF / wiring</button>
-<button id="bSnd">Sound and hum</button>
-<button id="bLgt">Light</button>
-<button id="bVib">Vibration</button>
-</div>
+<button class="go" id="bAll">Scan this room</button>
+<div class="row2"><button id="bStop" disabled>Stop scan</button><button id="bOne">Run one test…</button></div>
+<div class="opts" id="oneBox" hidden><label>Choose a test<select id="oneSel"><option value="emf">EMF / wiring</option><option value="snd">Noise and hum</option><option value="lgt">Light</option><option value="vib">Vibration</option></select></label><button id="bOneGo">Start this test</button></div>
 
-<div class="tests" id="tests"></div>
+<h2>Readings</h2>
+<p class="small" style="margin:-4px 0 10px">Tap a card to see what the level means.</p>
+<div class="cards" id="cards"></div>
 
 <h2>Things the phone cannot sense</h2>
-<p class="sub" style="margin-bottom:4px">Tick what is true for this room. These go into the conclusion.</p>
-<div class="chk" id="chk"></div>
+<p class="small" style="margin:-4px 0 10px">Tap everything that is true for this room.</p>
+<div class="chips" id="chk"></div>
 
 <h2>Conclusion</h2>
-<div id="report"><p class="sub">Run at least one test or tick the checklist to get a conclusion.</p></div>
-<div class="btns">
-<button id="bSave">Save this room</button>
-<button id="bCopy">Copy summary</button>
-<button id="bReset" style="grid-column:1/-1">Clear and scan a new room</button>
-</div>
+<div id="report"></div>
+<div class="row2"><button id="bSave">Save room</button><button id="bCopy">Copy summary</button></div>
+<button id="bReset" style="width:100%;margin-top:10px">New room</button>
 
 <h2>Saved rooms</h2>
-<div class="rooms" id="rooms"><p class="sub">No rooms saved yet.</p></div>
+<div class="rooms" id="rooms"></div>
 </section>
 
+<!-- ============ NIGHT ============ -->
 <section id="p-night" hidden>
-<h2 style="margin-top:6px">Night watch: sound and motion recorder</h2>
-<p class="sub">Leave the phone in the room overnight, plugged into a charger with the screen on. It logs every knock, creak, scratch, vibration and movement with the time, records a short clip of each sound, and suggests a likely cause.</p>
+<h2 style="margin-top:4px">Night watch</h2>
+<p class="small" style="margin-top:-4px">Leave the phone in the room overnight, on charge, screen on. It logs every knock, creak, scratch, vibration and movement with the time, keeps a short clip of each sound and names the likely cause.</p>
 <div class="opts">
-<label>Sensitivity<select id="nSens"><option value="10">Normal</option><option value="6">High (picks up faint sounds)</option><option value="15">Low (only loud sounds)</option></select></label>
-<label class="row"><input type="checkbox" id="nClip" checked> Record a short clip of each sound</label>
-<label class="row"><input type="checkbox" id="nCam"> Also watch for movement with the camera (uses more battery)</label>
+<label>Sensitivity<select id="nSens"><option value="10">Normal</option><option value="6">High: picks up faint sounds</option><option value="15">Low: only loud sounds</option></select></label>
+<label class="row"><input type="checkbox" id="nClip" checked> Keep a short clip of each sound</label>
+<label class="row"><input type="checkbox" id="nCam"> Watch for movement with the camera (more battery)</label>
 </div>
-<div class="meter">
-<div class="mlabel" id="nState">Not running</div>
-<div class="nbig" id="nTime">00:00:00</div>
-<div class="mnote" id="nLive">Live level will show here</div>
-<div class="bar"><i id="nBar"></i></div>
-<video id="nVid" playsinline muted hidden></video>
+<div class="hero">
+ <div class="lhead"><span class="lname" id="nState">Not running</span><span class="lstep" id="nCountEv">0 events</span></div>
+ <div class="nbig" id="nTime">00:00:00</div>
+ <p class="lhint" id="nLive">Sound level over time will draw here</p>
+ <div class="scope"><canvas id="nScope"></canvas></div>
+ <video id="nVid" playsinline muted hidden></video>
 </div>
-<div class="btns">
-<button class="main" id="nStart">Start night watch</button>
-<button id="nStop" disabled>Stop</button>
-<button id="nCopy">Copy night summary</button>
-</div>
-<h2>Summary</h2>
-<div id="nSum"><p class="sub">Start a session to see results.</p></div>
-<h2>Timeline</h2>
-<div id="nList" class="tl"><p class="sub">No events yet.</p></div>
+<button class="go" id="nStart">Start night watch</button>
+<div class="row2"><button id="nStop" disabled>Stop</button><button id="nCopy">Copy summary</button></div>
+<h2>Summary</h2><div id="nSum"><p class="small">Start a session to see results.</p></div>
+<h2>Timeline</h2><div id="nList" class="tl"><p class="small">No events yet.</p></div>
 </section>
 
-<section id="p-tools" hidden>
-<h2 style="margin-top:6px">Thermal camera view</h2>
-<p class="sub">Phones have no heat sensor, so this needs a plug-in thermal camera. Plug it in, tap the button and pick it from the list. Look for blue (cold) patches on walls, windows and near pipes: they usually mean damp, a leak or a draft.</p>
-<div class="btns"><button class="main" id="tFind">Find cameras</button></div>
-<div class="opts"><label>Camera<select id="tSel"><option value="">Tap "Find cameras" first</option></select></label></div>
-<div class="meter"><video id="tVid" playsinline muted style="width:100%;border-radius:12px;background:#000;max-height:60vh"></video><div class="mnote" id="tNote">Some thermal cameras only work in their own app. If yours shows nothing here, use its app and tick "cold spots" in the room checklist.</div></div>
+<!-- ============ HEART ============ -->
+<section id="p-heart" hidden>
+<h2 style="margin-top:4px">Heart rate</h2>
+<p class="small" style="margin-top:-4px">Cover the back camera and flash completely with your fingertip, press lightly and stay still for 30 seconds. The camera reads tiny colour changes in your finger with each heartbeat.</p>
+<div class="hero">
+ <div class="lhead"><span class="lname" id="hState">Ready</span><span class="lstep" id="hFinger">Finger: not checked</span></div>
+ <div class="big" id="hBpm" style="margin:8px 0 2px">--</div>
+ <p class="lhint" id="hHint">beats per minute</p>
+ <div class="scope"><canvas id="hScope"></canvas></div>
+ <div class="pbar"><i id="hProg"></i></div>
+</div>
+<button class="go" id="hStart">Measure heart rate</button>
+<button id="hStop" style="width:100%;margin-top:10px" disabled>Stop</button>
+<div id="hRes" style="margin-top:14px"></div>
+<h2>Heart rate history</h2><div id="hHist" class="rooms"><p class="small">No readings yet.</p></div>
 
+<h2>Blood pressure</h2>
+<div class="report"><p style="margin:0">A phone camera cannot measure blood pressure accurately. Apps that claim to are not reliable, so this app does not guess it. Use a cuff BP machine (about ₹1,500 to ₹2,500) and log the reading here. The app tells you which range it falls in and keeps your history.</p></div>
+<div class="opts" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<label>Upper (systolic)<input type="number" inputmode="numeric" id="bpS" placeholder="120" min="60" max="260"></label>
+<label>Lower (diastolic)<input type="number" inputmode="numeric" id="bpD" placeholder="80" min="30" max="160"></label>
+<label>Pulse<input type="number" inputmode="numeric" id="bpP" placeholder="72" min="30" max="220"></label>
+</div>
+<button class="go" id="bpAdd" style="margin-top:4px">Check and save BP</button>
+<div id="bpRes" style="margin-top:12px"></div>
+<div id="bpHist" class="rooms" style="margin-top:10px"></div>
+<div class="gcard" style="margin-top:14px"><h3>BP ranges (adults)</h3><table><thead><tr><th>Range</th><th>Upper / lower</th></tr></thead><tbody id="bpTbl"></tbody></table></div>
+<p class="small">For wellness only, not a medical device. If you have chest pain, breathlessness, fainting, or a BP above 180/120, get medical help straight away.</p>
+</section>
+
+<!-- ============ GUIDE ============ -->
+<section id="p-guide" hidden>
+<h2 style="margin-top:4px">What the levels mean</h2>
+<p class="small" style="margin-top:-4px">Green is fine, amber is worth fixing, red needs action. Each reading below shows the ranges, what it does to people, and what to do.</p>
+<div id="gInd"></div>
+<h2>When readings combine</h2>
+<p class="small" style="margin-top:-4px">The conclusion looks at readings together. These patterns lead to these conclusions.</p>
+<div id="gCombo"></div>
+<h2>Health score</h2>
+<div class="gcard"><table><thead><tr><th>Score</th><th>Conclusion</th><th>Meaning</th></tr></thead><tbody id="gScore"></tbody></table>
+<p class="small" style="margin-bottom:0">Each amber or red reading and each ticked checklist item takes points away from 100. A red flag (for example a gas appliance with poor air flow) makes the conclusion "Act now" whatever the score.</p></div>
+<p class="small">No device can detect ghosts, souls or "negative energy". This guide covers the physical causes that are known to make a room feel heavy, uneasy or "wrong".</p>
+</section>
+
+<!-- ============ MORE ============ -->
+<section id="p-more" hidden>
+<h2 style="margin-top:4px">Thermal camera view</h2>
+<p class="small" style="margin-top:-4px">Phones have no heat sensor, so this needs a plug-in USB-C thermal camera. Blue or purple patches on walls are cold spots, usually damp, a leak or a draft.</p>
+<button class="go" id="tFind" style="margin-top:4px">Find cameras</button>
+<div class="opts"><label>Camera<select id="tSel"><option value="">Tap Find cameras first</option></select></label></div>
+<div class="hero"><video id="tVid" playsinline muted style="width:100%;border-radius:12px;background:#000;max-height:55vh"></video><p class="small" id="tNote" style="margin-bottom:0">Some thermal cameras only work in their own app. If so, use it and tick "Cold spots" on the scan page.</p></div>
 <h2>Spirit box test (explained)</h2>
-<p class="sub">Ghost hunters' spirit boxes jump between radio stations, making choppy static. This plays the same kind of sweeping static for 30 seconds. Listen and note any "words" you hear, then read why it happens.</p>
-<div class="btns"><button class="main" id="sPlay">Play 30 seconds of sweeping static</button></div>
-<div class="slip" id="sOut" hidden>
-<div class="verdict">Did you hear words or a voice?</div>
-<p style="margin:0">Most people do. The static here is completely random and computer-made, with no radio and no message in it. The brain is built to find speech in noise, so it fills in words, especially when you expect to hear them. This is called auditory pareidolia. A real spirit box does the same with fragments of radio stations, which is why it seems to "answer". It cannot pick up spirits.</p>
-</div>
+<p class="small" style="margin-top:-4px">Spirit boxes jump between radio stations to make choppy static. This plays the same kind of sweeping static for 30 seconds. Note any "words" you hear, then read why.</p>
+<button class="go" id="sPlay" style="margin-top:4px">Play 30 seconds of static</button>
+<div class="report" id="sOut" hidden style="margin-top:12px"><div class="verdict">Did you hear words?</div><p style="margin:0">Most people do. This static is random and computer-made, with no radio and no message in it. The brain is built to find speech in noise and fills in words, more so when it expects them. This is called auditory pareidolia. A spirit box does the same with scraps of radio, which is why it seems to "answer". It cannot pick up spirits.</p></div>
+<h2>About the readings</h2>
+<p class="small">Phone sensors are not lab instruments. Sound is an approximate level from an uncalibrated microphone; phones cannot record true infrasound (below 20 Hz). Light from the camera is rough because the camera adjusts itself. EMF needs a magnetometer the browser can read; in Chrome on Android, if it shows "Not available", open chrome://flags, turn on "Generic Sensor Extra Classes" and reload. All data stays on your phone.</p>
 </section>
-
-<p class="small" style="margin-top:28px">About the readings: phone sensors are not lab instruments. Sound is an approximate level from an uncalibrated microphone, and phones cannot record true infrasound (below 20 Hz). Light from the camera is rough because the camera adjusts itself. The EMF test needs a phone magnetometer that the browser can read, mainly Chrome on Android. No device, app or gadget can detect ghosts, souls or "negative energy"; this app checks the physical causes that are known to make people feel uneasy.</p>
 </div>
+
+<nav class="bn" id="bn">
+<button data-p="scan" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12l5-5"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>Scan</button>
+<button data-p="night"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>Night watch</button>
+<button data-p="heart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.5-7 10-7 10z"/><path d="M7 12h3l1-2 2 4 1-2h3"/></svg>Heart</button>
+<button data-p="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h6a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-6a2 2 0 00-2 2v12a2 2 0 012-2h6z"/></svg>Guide</button>
+<button data-p="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button>
+</nav>
 <div class="toast" id="toast"></div>
 
 <script>
 {
 const $=id=>document.getElementById(id);
-const DUR=12000;
-const R={};      // results by test key
-let busy=false;
-
-const TESTS=[
- {k:'emf',name:'EMF / wiring',hint:'Magnetic field from wiring, meters, appliances'},
- {k:'snd',name:'Sound level',hint:'Background noise in the room'},
- {k:'hum',name:'Low hum',hint:'Electrical 50 Hz hum and low rumble'},
- {k:'lgt',name:'Light',hint:'How bright or dim the room is'},
- {k:'vib',name:'Vibration',hint:'Floor shake from pumps, traffic, machines'}
-];
-const CHECKS=[
- {k:'damp',t:'Damp walls, mould patches or a musty smell',w:15,f:'Damp or mould present',a:'Mould spores cause headaches, heaviness and breathing trouble. Fix the leak, dry the wall, treat with anti-fungal solution.'},
- {k:'gas',t:'Gas smell, a gas geyser or a gas stove used in or near this room',w:15,f:'Gas appliance nearby',a:'Carbon monoxide has no smell and causes dizziness, confusion and a feeling of dread. Keep it ventilated and fit a CO alarm (about ₹1,500).'},
- {k:'vent',t:'Poor ventilation, windows usually closed',w:10,f:'Poor air flow',a:'Stale air builds up CO2, which causes drowsiness and heaviness. Open windows daily or add an exhaust fan.'},
- {k:'cold',t:'Cold spots or drafts in one area',w:5,f:'Cold spots or drafts',a:'Usually gaps in windows, AC ducts or damp walls. Seal gaps and check for seepage.'},
- {k:'wire',t:'Old wiring, sparking switches or flickering lights',w:12,f:'Wiring problems',a:'Faulty wiring is a fire risk and causes strong EMF and flicker. Get an electrician to check the board and earthing.'},
- {k:'noise',t:'Knocking, creaking or scratching sounds at night',w:6,f:'Unexplained night sounds',a:'Common causes: pipes expanding, rats or pigeons, building settling. Check ducts, false ceiling and drain pipes.'},
- {k:'dark',t:'Very little daylight, room stays dark',w:8,f:'Low daylight',a:'Dark rooms lower mood and disturb sleep. Use curtains that open fully and warm white lights of good brightness.'},
- {k:'sleep',t:'People sleep badly or feel uneasy in this room',w:4,f:'People feel uneasy here',a:'Check the readings above. Noise, light at night, poor air and EMF near the bed are the usual causes.'}
-];
-
-function rowsHTML(){
- $('tests').innerHTML=TESTS.map(t=>{const r=R[t.k];
-  const v=r?`<em class="${r.c}">${r.label}</em>`:`<em class="na">Not run</em>`;
-  return `<div class="t"><b>${t.name}${r&&r.val?' · '+r.val:''}</b>${v}<span>${r&&r.note?r.note:t.hint}</span></div>`}).join('');
-}
-$('chk').innerHTML=CHECKS.map(c=>`<label><input type="checkbox" id="c_${c.k}"><span>${c.t}</span></label>`).join('');
-$('chk').addEventListener('change',report);
-
-function gauge(p,txt){ // p 0..1 (0 good,1 bad)
- p=Math.max(0,Math.min(1,p));$('needle').style.transform=`rotate(${-90+p*180}deg)`;$('gval').textContent=txt;
-}
-function status(a,b){$('mlabel').textContent=a;$('mnote').textContent=b}
-function prog(p){$('prog').style.width=(p*100)+'%'}
+const DUR=12000,sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)}
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function cls(level){return level===0?'ok':level===1?'wn':'bd'}
-function lock(on){busy=on;document.querySelectorAll('#p-scan .btns button').forEach(b=>b.disabled=on)}
+function std(a){const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/a.length)}
 
-async function timed(fn){const t0=performance.now();
- while(true){const p=(performance.now()-t0)/DUR;prog(Math.min(p,1));if(p>=1)break;fn&&fn();await sleep(100)}}
-
-/* ---------- EMF ---------- */
-async function testEMF(){
- status('EMF / wiring scan','Slowly move the phone near switchboards, walls, the bed head and appliances.');
- if(!('Magnetometer' in window)){
-  R.emf={c:'na',label:'Not available',note:'This phone or browser does not share magnetometer data. In Chrome on Android, open chrome://flags, enable "Generic Sensor Extra Classes", then reload.'};
-  gauge(0,'N/A');rowsHTML();await sleep(2500);return}
- let s,vals=[];
- try{
-  s=new Magnetometer({frequency:10});
-  s.addEventListener('reading',()=>{const m=Math.hypot(s.x,s.y,s.z);if(isFinite(m))vals.push(m)});
-  await new Promise((res,rej)=>{s.addEventListener('error',e=>rej(e.error||e));s.start();setTimeout(res,600)});
- }catch(e){R.emf={c:'na',label:'Blocked',note:'Sensor permission was refused or is not supported: '+(e&&e.name||'error')};rowsHTML();return}
- await timed(()=>{const m=vals[vals.length-1];if(m){gauge((m-30)/170,m.toFixed(0)+' µT')}});
- s.stop();
- if(vals.length<5){R.emf={c:'na',label:'No data',note:'The sensor sent no readings.'};rowsHTML();return}
- const mx=Math.max(...vals),sorted=[...vals].sort((a,b)=>a-b),med=sorted[sorted.length>>1],spike=mx-med;
- const lv=mx>150||spike>80?2:mx>75||spike>30?1:0;
- R.emf={c:cls(lv),label:['Normal','Elevated','High'][lv],val:`peak ${mx.toFixed(0)} µT`,lvl:lv,
-  note:lv===0?'Close to the Earth\'s natural field (25–65 µT). No wiring hot spots found.':
-  lv===1?'Some spots above the natural field, likely wiring or an appliance. Keep beds and desks away from them.':
-  'Strong field spots found. Often a meter board, inverter, faulty wiring or transformer behind the wall. Strong fields can cause unease and poor sleep in some people. Get the wiring checked.'};
- rowsHTML();
-}
-
-/* ---------- Sound + hum ---------- */
-async function testSound(){
- status('Sound and hum scan','Keep quiet and stay still. Switch fans off for a cleaner reading if you can.');
- let stream,ctx;
- try{
-  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
- }catch(e){R.snd={c:'na',label:'Blocked',note:'Microphone permission was refused.'};R.hum={c:'na',label:'Blocked',note:'Needs the microphone.'};rowsHTML();return}
- ctx=new (window.AudioContext||window.webkitAudioContext)();
- const src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();
- an.fftSize=16384;an.smoothingTimeConstant=0;src.connect(an);
- const td=new Float32Array(an.fftSize),fd=new Float32Array(an.frequencyBinCount),acc=new Float64Array(an.frequencyBinCount);
- const binHz=ctx.sampleRate/an.fftSize;let levels=[],frames=0;
- await timed(()=>{
-  an.getFloatTimeDomainData(td);let sum=0;for(let i=0;i<td.length;i++)sum+=td[i]*td[i];
-  const rms=Math.sqrt(sum/td.length),dbfs=20*Math.log10(rms+1e-9),db=Math.max(0,dbfs+100);
-  levels.push(db);gauge((db-30)/50,'~'+db.toFixed(0)+' dB');
-  an.getFloatFrequencyData(fd);for(let i=0;i<fd.length;i++)acc[i]+=Math.pow(10,fd[i]/10);frames++;
- });
- stream.getTracks().forEach(t=>t.stop());ctx.close();
- levels.sort((a,b)=>a-b);const avg=levels[levels.length>>1],peak=levels[Math.floor(levels.length*.95)];
- const lvS=avg>58?2:avg>45?1:0;
- R.snd={c:cls(lvS),label:['Quiet','Moderate','Noisy'][lvS],val:`~${avg.toFixed(0)} dB`,lvl:lvS,
-  note:lvS===0?'A calm background level, good for rest and sleep.':
-  lvS===1?'Noticeable background noise. Above about 45 dB, sleep gets lighter.':
-  'Loud background noise. Ongoing noise raises stress and tiredness. Look for the source: traffic, a pump, AC or neighbours.'};
- // hum analysis
- const band=(a,b)=>{let s=0;for(let i=Math.max(1,Math.floor(a/binHz));i<=Math.ceil(b/binHz)&&i<acc.length;i++)s+=acc[i];return s};
- const total=band(20,8000)+1e-20,low=band(20,150),share=low/total;
- const peakAt=f=>{const c=Math.round(f/binHz);let pk=0;for(let i=c-1;i<=c+1;i++)pk=Math.max(pk,acc[i]||0);
-  let nb=[];for(let i=c-12;i<=c+12;i++)if(Math.abs(i-c)>3&&acc[i])nb.push(acc[i]);nb.sort((a,b)=>a-b);
-  const m=nb[nb.length>>1]||1e-20;return 10*Math.log10(pk/m)};
- const h50=peakAt(50),h100=peakAt(100),mains=Math.max(h50,h100)>12;
- const lvH=(mains&&share>.35)||share>.6?2:(mains||share>.35)?1:0;
- R.hum={c:cls(lvH),label:['Low','Some hum','Strong hum'][lvH],val:`${Math.round(share*100)}% low-freq`,lvl:lvH,mains,
-  note:(mains?'Electrical 50 Hz hum detected, typically from a transformer, inverter, choke light, fridge or meter board. ':'No clear electrical hum. ')+
-  (share>.35?'A large part of the sound is low rumble. Low rumble that is barely heard is linked to unease, pressure in the ears and a feeling of being watched.':'Low-frequency rumble is within the normal range.')};
- rowsHTML();
-}
-
-/* ---------- Light ---------- */
-async function testLight(){
- status('Light scan','Point the back camera around the room at eye level, not straight at a bulb or window.');
- if('AmbientLightSensor' in window){
-  try{const s=new AmbientLightSensor();let v=[];s.addEventListener('reading',()=>v.push(s.illuminance));s.start();
-   await timed(()=>{const l=v[v.length-1];if(l!=null)gauge(1-Math.min(l,500)/500,l.toFixed(0)+' lux')});s.stop();
-   if(v.length){const l=v.reduce((a,b)=>a+b)/v.length;const lv=l<50?2:l<150?1:0;
-    R.lgt={c:cls(lv),label:['Good','Dim','Very dim'][lv],val:`${l.toFixed(0)} lux`,lvl:lv,note:lightNote(lv)};rowsHTML();return}}catch(e){}
- }
- let stream;
- try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:320,height:240}})}
- catch(e){R.lgt={c:'na',label:'Blocked',note:'Camera permission was refused.'};rowsHTML();return}
- const v=document.createElement('video');v.playsInline=true;v.muted=true;v.srcObject=stream;await v.play().catch(()=>{});
- const c=document.createElement('canvas');c.width=64;c.height=48;const g=c.getContext('2d',{willReadFrequently:true});let lum=[];
- await timed(()=>{if(!v.videoWidth)return;g.drawImage(v,0,0,64,48);const d=g.getImageData(0,0,64,48).data;let s=0;
-  for(let i=0;i<d.length;i+=4)s+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];const L=s/(d.length/4);lum.push(L);gauge(1-L/200,Math.round(L/2.55)+'%')});
- stream.getTracks().forEach(t=>t.stop());
- if(!lum.length){R.lgt={c:'na',label:'No data',note:'The camera sent no frames.'};rowsHTML();return}
- const L=lum.reduce((a,b)=>a+b)/lum.length,lv=L<55?2:L<95?1:0;
- R.lgt={c:cls(lv),label:['Good','Dim','Very dim'][lv],val:`${Math.round(L/2.55)}% (rough)`,lvl:lv,note:lightNote(lv)};
- rowsHTML();
-}
-function lightNote(lv){return lv===0?'Light level is comfortable.':lv===1?'Somewhat dim. Dim rooms feel gloomy and lower mood. Add brighter warm white lighting.':'Very dim. Dark rooms are strongly linked to low mood, tiredness and a "heavy" feeling. Improve daylight and lighting.'}
-
-/* ---------- Vibration ---------- */
-async function testVib(){
- status('Vibration scan','Place the phone flat on the floor or a table and do not touch it.');
- if(typeof DeviceMotionEvent==='undefined'){R.vib={c:'na',label:'Not available',note:'This device has no motion sensor access.'};rowsHTML();return}
- if(typeof DeviceMotionEvent.requestPermission==='function'){
-  try{if(await DeviceMotionEvent.requestPermission()!=='granted')throw 0}catch(e){R.vib={c:'na',label:'Blocked',note:'Motion permission was refused.'};rowsHTML();return}}
- let m=[];const h=e=>{const a=e.accelerationIncludingGravity;if(a&&a.x!=null)m.push(Math.hypot(a.x,a.y,a.z))};
- window.addEventListener('devicemotion',h);await sleep(1500);m=[];
- await timed(()=>{const w=m.slice(-20);if(w.length>2){const sd=std(w);gauge(sd/0.15,sd.toFixed(3))}});
- window.removeEventListener('devicemotion',h);
- if(m.length<10){R.vib={c:'na',label:'No data',note:'No motion readings. The browser may block motion sensors.'};rowsHTML();return}
- const sd=std(m),lv=sd>0.1?2:sd>0.03?1:0;
- R.vib={c:cls(lv),label:['Still','Mild','Noticeable'][lv],val:`${sd.toFixed(3)} m/s²`,lvl:lv,
-  note:lv===0?'The floor is steady.':lv===1?'Slight ongoing vibration, often a water pump, lift, AC compressor or road traffic.':'Clear vibration. Constant vibration, even when barely felt, causes discomfort and poor sleep. Find and isolate the machine causing it.'};
- rowsHTML();
-}
-function std(a){const m=a.reduce((x,y)=>x+y)/a.length;return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/a.length)}
-
-/* ---------- Runner ---------- */
-async function run(list){
- if(busy)return;lock(true);
- try{for(const f of list){await f();await sleep(400)}}
- catch(e){status('Something went wrong',String(e&&e.message||e))}
- lock(false);prog(0);gauge(0,'Done');status('Scan finished','Read the conclusion below. Tick the checklist for a fuller picture.');report();
- $('report').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});
-}
-$('bAll').onclick=()=>run([testEMF,testSound,testLight,testVib]);
-$('bEmf').onclick=()=>run([testEMF]);
-$('bSnd').onclick=()=>run([testSound]);
-$('bLgt').onclick=()=>run([testLight]);
-$('bVib').onclick=()=>run([testVib]);
-
-/* ---------- Conclusion ---------- */
+/* ---------- indicator definitions: ranges, meaning, actions ---------- */
+const IND=[
+ {k:'emf',name:'EMF / wiring',short:'EMF',unit:'µT',pos:v=>(v-25)/175,
+  ranges:['Below 75 µT','75–150 µT','Above 150 µT'],
+  mean:['Close to the Earth\'s natural field (25–65 µT). No wiring hot spots.',
+        'Spots above the natural field, usually wiring, an appliance or a charger. Keep beds and desks away from them.',
+        'Strong field spots: meter board, inverter, transformer or faulty wiring behind the wall. Strong fields can cause unease and poor sleep in some people. Get the wiring and earthing checked.']},
+ {k:'snd',name:'Noise',short:'Noise',unit:'dB',pos:v=>(v-30)/40,
+  ranges:['Below 45 dB','45–58 dB','Above 58 dB'],
+  mean:['Calm background, good for rest and sleep.',
+        'Noticeable background noise. Above about 45 dB sleep gets lighter and stress rises.',
+        'Loud background noise. Constant noise raises stress and tiredness. Find the source: traffic, pump, AC or neighbours.']},
+ {k:'hum',name:'Low hum',short:'Hum',unit:'%',pos:v=>v/90,
+  ranges:['Under 35% low rumble, no 50 Hz hum','35–60% rumble or 50 Hz hum','Over 60% rumble, or 50 Hz hum plus rumble'],
+  mean:['Low-frequency rumble is normal.',
+        'Some low rumble or electrical 50 Hz hum (transformer, inverter, fridge, choke light, meter board).',
+        'Strong low rumble. Barely-heard low sound is linked to unease, ear pressure and a feeling of being watched. Find and move or fix the source.']},
+ {k:'lgt',name:'Light',short:'Light',unit:'',pos:v=>1-v/60,
+  ranges:['Bright: over 150 lux (or over 37% on camera)','Dim: 50–150 lux (22–37%)','Very dim: under 50 lux (under 22%)'],
+  mean:['Comfortable light level.',
+        'Somewhat dim. Dim rooms feel gloomy and lower mood. Add brighter warm white light.',
+        'Very dim. Dark rooms are strongly linked to low mood, tiredness and a "heavy" feeling. Improve daylight and lighting.']},
+ {k:'vib',name:'Vibration',short:'Vibration',unit:'m/s²',pos:v=>v/0.15,
+  ranges:['Below 0.03 m/s²','0.03–0.10 m/s²','Above 0.10 m/s²'],
+  mean:['The floor is steady.',
+        'Slight ongoing vibration: water pump, lift, AC compressor or road traffic.',
+        'Clear vibration. Constant vibration, even when barely felt, causes discomfort and poor sleep. Find and isolate the machine.']}
+];
+const LBL=['Good','Fix soon','Act now'];
+const CHECKS=[
+ {k:'gas',t:'Gas stove or geyser nearby',w:15,f:'Gas appliance nearby',a:'Carbon monoxide has no smell and causes dizziness, confusion and dread. Ventilate and fit a CO alarm (about ₹1,500).'},
+ {k:'damp',t:'Damp walls or mould smell',w:15,f:'Damp or mould',a:'Mould spores cause headaches, heaviness and breathing trouble. Fix the leak, dry the wall, treat with anti-fungal solution.'},
+ {k:'vent',t:'Windows usually closed',w:10,f:'Poor air flow',a:'Stale air builds up CO2, causing drowsiness and heaviness. Open windows daily or add an exhaust fan.'},
+ {k:'wire',t:'Old wiring or flickering lights',w:12,f:'Wiring problems',a:'Fire risk and a source of strong EMF and flicker. Get an electrician to check the board and earthing.'},
+ {k:'cold',t:'Cold spots or drafts',w:5,f:'Cold spots or drafts',a:'Usually gaps in windows, AC ducts or damp walls. Seal gaps and check for seepage.'},
+ {k:'noise',t:'Knocks or scratching at night',w:6,f:'Night sounds',a:'Usually pipes, rats or birds, or the building settling. Run Night watch to find out which.'},
+ {k:'dark',t:'Little daylight',w:8,f:'Low daylight',a:'Dark rooms lower mood and disturb sleep. Open curtains fully and use bright warm white lights.'},
+ {k:'sleep',t:'People feel uneasy here',w:4,f:'People feel uneasy here',a:'Match it with the readings: noise, light at night, poor air and EMF near the bed are the usual causes.'}
+];
 const W={emf:[0,10,22],snd:[0,6,14],hum:[0,8,16],lgt:[0,5,10],vib:[0,6,12]};
+const BANDS=[[85,'Healthy room','Nothing physical that usually makes people uneasy.',0],[65,'Minor issues','A few fixable things that can make the room feel heavy.',1],[40,'Needs attention','Several physical problems known to cause unease and poor sleep.',2],[0,'Problem room','Many problems together. Fixing them usually changes how the room feels.',2]];
+/* combination rules: when readings occur together → conclusion */
+const COMBOS=[
+ {when:'Gas appliance + windows closed',flag:true,test:(R,C)=>C.gas&&C.vent,say:'Risk of carbon monoxide build-up. This can cause dizziness, confusion and a strong sense of dread. Open windows now and fit a CO alarm before anything else.'},
+ {when:'EMF red + old wiring',flag:true,test:(R,C)=>lv(R,'emf')===2&&C.wire,say:'A strong electrical field with faulty wiring points to a fault behind the wall. This is a fire risk. Get an electrician soon.'},
+ {when:'EMF amber/red + 50 Hz hum',test:R=>lv(R,'emf')>=1&&R.hum&&R.hum.mains,say:'An electrical source is close by (meter board, inverter, transformer or choke light). It is the most likely reason the room feels uneasy. Keep beds and desks at least 1–2 metres away from it.'},
+ {when:'Low hum amber/red + vibration amber/red',test:R=>lv(R,'hum')>=1&&lv(R,'vib')>=1,say:'Low rumble with vibration means a machine: water pump, lift motor, generator or heavy traffic. Barely-noticed rumble like this is a known cause of unease and poor sleep.'},
+ {when:'Noise red + vibration amber/red',test:R=>lv(R,'snd')===2&&lv(R,'vib')>=1,say:'Loud noise with floor vibration suggests construction, traffic or a building pump nearby.'},
+ {when:'Light dim + damp or closed windows',test:(R,C)=>lv(R,'lgt')>=1&&(C.damp||C.vent),say:'Dark, damp, stale air: the classic "heavy room". Mould grows in these conditions. More light, air flow and fixing damp change the feel most.'},
+ {when:'People uneasy + any red reading',test:(R,C)=>C.sleep&&IND.some(i=>lv(R,i.k)===2),say:'The unease people feel lines up with a red reading above. Fix that first and see if the feeling changes.'},
+ {when:'Everything green, nothing ticked',test:(R,C)=>ran(R)>=3&&IND.every(i=>lv(R,i.k)==null||lv(R,i.k)===0)&&!Object.values(C).some(Boolean),say:'All readings are normal. Physically, this is a healthy room.'}
+];
+function lv(R,k){return R[k]&&R[k].lvl!=null?R[k].lvl:null}
+function ran(R){return IND.filter(i=>lv(R,i.k)!=null).length}
+
+const R={};const C={};let busy=false,stopReq=false;
+
+/* ---------- render: cards, radar, ring, checklist, report ---------- */
+function drawCards(){
+ $('cards').innerHTML=IND.map(i=>{const r=R[i.k];const L=r&&r.lvl!=null?r.lvl:null;
+  const pos=r&&r.raw!=null?Math.max(2,Math.min(98,i.pos(r.raw)*100)):null;
+  return `<button class="card" data-k="${i.k}"><span class="n">${i.name}</span><span class="v">${r?esc(r.val||'—'):'—'}</span>
+  <span class="chip ${L==null?'gn':'g'+L}">${L==null?(r?esc(r.label):'Not scanned'):LBL[L]}</span>
+  ${pos!=null?`<div class="meterbar"><i style="left:${pos}%"></i></div>`:''}
+  <span class="m">${L!=null?esc(i.mean[L]):r?esc(r.note||''):'Run the scan to get this reading.'}</span></button>`}).join('');
+}
+$('cards').addEventListener('click',e=>{const c=e.target.closest('.card');if(c)c.classList.toggle('open')});
+$('chk').innerHTML=CHECKS.map(c=>`<button class="tog" aria-pressed="false" data-k="${c.k}">${c.t}</button>`).join('');
+$('chk').addEventListener('click',e=>{const b=e.target.closest('.tog');if(!b)return;const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);C[b.dataset.k]=on;update()});
+
+function drawRadar(){
+ const svg=$('radar'),n=IND.length,cx=150,cy=150,rad=105;
+ const pt=(i,f)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [cx+Math.cos(a)*rad*f,cy+Math.sin(a)*rad*f]};
+ let g='';[.33,.66,1].forEach(f=>{g+=`<polygon points="${IND.map((_,i)=>pt(i,f).join(',')).join(' ')}" fill="none" stroke="var(--grid)" stroke-width="1"/>`});
+ IND.forEach((_,i)=>{const [x,y]=pt(i,1);g+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--grid)"/>`});
+ const val=k=>{const L=lv(R,k);return L==null?null:[1,.55,.18][L]};
+ const has=IND.some(i=>val(i.k)!=null);
+ if(has){const p=IND.map((i,j)=>pt(j,val(i.k)??.05).join(',')).join(' ');
+  g+=`<polygon points="${p}" fill="color-mix(in srgb,var(--acc) 22%,transparent)" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  IND.forEach((i,j)=>{const v=val(i.k);if(v==null)return;const [x,y]=pt(j,v);g+=`<circle cx="${x}" cy="${y}" r="5" fill="var(--${['good','warn','bad'][lv(R,i.k)]})"/>`})}
+ IND.forEach((i,j)=>{const [x,y]=pt(j,1.22);const L=lv(R,i.k);
+  g+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="15" font-family="Inter,sans-serif" font-weight="600" fill="${L==null?'var(--mute)':'var(--ink)'}">${i.short}</text>`});
+ if(!has)g+=`<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="var(--mute)" font-family="Inter,sans-serif">Outer edge = healthy</text>`;
+ svg.innerHTML=g;
+}
+
 function build(){
  const name=($('room').value||'This room').trim();
- let pen=0,find=[],good=[],ran=0;
- for(const t of TESTS){const r=R[t.k];if(!r||r.lvl==null)continue;ran++;pen+=W[t.k][r.lvl];
-  if(r.lvl>0)find.push({t:`${t.name}: ${r.label}${r.val?' ('+r.val+')':''}`,a:r.note});else good.push(t.name)}
- const ticked=CHECKS.filter(c=>$('c_'+c.k).checked);
- ticked.forEach(c=>{pen+=c.w;find.push({t:c.f,a:c.a})});
- if(!ran&&!ticked.length)return null;
- const score=Math.max(0,100-pen);
- const verdict=score>=80?'Healthy room':score>=60?'Some issues to fix':'Needs attention';
- const vc=score>=80?'ok':score>=60?'wn':'bd';
- let summary=score>=80?`${name} looks physically healthy. The readings show nothing that usually makes people feel uneasy.`:
-  score>=60?`${name} has a few physical issues that can make a room feel heavy or uncomfortable. They are fixable.`:
-  `${name} has several physical problems that are known to cause unease, poor sleep and a "bad feeling". Fixing them usually changes how the room feels.`;
- return {name,score,verdict,vc,summary,find,good,ran,date:new Date().toLocaleString('en-IN')};
+ let pen=0,acts=[];const n=ran(R);
+ IND.forEach(i=>{const L=lv(R,i.k);if(L==null)return;pen+=W[i.k][L];if(L>0)acts.push({sev:L,t:`${i.name}: ${LBL[L]} (${R[i.k].val})`,a:i.mean[L]})});
+ const ticked=CHECKS.filter(c=>C[c.k]);ticked.forEach(c=>{pen+=c.w;acts.push({sev:c.w>=12?2:1,t:c.f,a:c.a})});
+ if(!n&&!ticked.length)return null;
+ const score=Math.max(0,100-pen),band=BANDS.find(b=>score>=b[0]);
+ const combos=COMBOS.filter(c=>c.test(R,C));const flag=combos.some(c=>c.flag);
+ acts.sort((a,b)=>b.sev-a.sev);
+ return {name,score,band:flag?'Act now':band[1],bandTxt:band[2],sev:flag?2:band[3],flag,combos,acts,partial:4-IND.filter(i=>i.k!=='hum'&&lv(R,i.k)!=null).length,date:new Date().toLocaleString('en-IN')};
 }
-function report(){
- rowsHTML();const b=build();
- if(!b){$('report').innerHTML='<p class="sub">Run at least one test or tick the checklist to get a conclusion.</p>';return}
- $('report').innerHTML=`<div class="slip">
+function update(){
+ drawCards();drawRadar();const b=build();
+ const arc=$('ringArc'),L=2*Math.PI*52;
+ if(!b){$('score').textContent='--';$('bandTxt').textContent='Not scanned';$('bandTxt').style.color='var(--mute)';arc.setAttribute('stroke-dasharray',`0 ${L}`);
+  $('report').innerHTML='<div class="report"><p class="small" style="margin:0">Tap "Scan this room" or tick the list above to get a conclusion.</p></div>';return}
+ const col=`var(--${['good','warn','bad'][b.sev]})`;
+ $('score').textContent=b.score;$('bandTxt').textContent=b.band;$('bandTxt').style.color=col;
+ arc.setAttribute('stroke-dasharray',`${L*b.score/100} ${L}`);arc.setAttribute('stroke',col);
+ $('report').innerHTML=`<div class="report">
  <div class="small">${esc(b.name)} · ${b.date}</div>
- <div style="margin-top:8px"><span class="score">${b.score}</span> <span class="small">/ 100 comfort score</span></div>
- <div class="verdict ${b.vc}">${b.verdict}</div>
- <p style="margin:0">${esc(b.summary)}</p>
- ${b.find.length?`<h3 style="font-size:16px;margin:14px 0 4px">What we found and what to do</h3><ul>${b.find.map(f=>`<li><b>${esc(f.t)}.</b> ${esc(f.a)}</li>`).join('')}</ul>`:''}
- ${b.good.length?`<p style="margin:8px 0 0"><b>All clear:</b> ${b.good.join(', ')}.</p>`:''}
- ${b.ran<4?`<p class="small" style="margin-top:10px">${4-b.ran} test(s) not run or unavailable, so this conclusion is partial.</p>`:''}
- <p class="small" style="margin-top:10px">This result covers physical causes only, as no device can measure spirits or energies. If the room still feels wrong after fixing these, check for a CO leak with a proper alarm and consider talking to the people who live there about sleep and stress.</p>
- </div>`;
-}
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function plain(b){
- let t=`ROOM HEALTH SCAN - ${b.name}\n${b.date}\nComfort score: ${b.score}/100 - ${b.verdict}\n\n${b.summary}\n`;
- if(b.find.length)t+='\nFindings:\n'+b.find.map((f,i)=>`${i+1}. ${f.t}. ${f.a}`).join('\n')+'\n';
- if(b.good.length)t+=`\nAll clear: ${b.good.join(', ')}\n`;
- return t;
+ <div class="verdict" style="color:${col}">${b.score}/100 · ${esc(b.band)}</div>
+ <p style="margin:0">${esc(b.bandTxt)}</p>
+ ${b.combos.map(c=>c.flag?`<div class="flag">${esc(c.say)}</div>`:`<div class="ins">${esc(c.say)}</div>`).join('')}
+ ${b.acts.length?`<h3 style="font:700 16px Sora,sans-serif;margin:14px 0 4px">What to do, most important first</h3><ol>${b.acts.map(f=>`<li><b>${esc(f.t)}.</b> ${esc(f.a)}</li>`).join('')}</ol>`:''}
+ ${b.partial>0?`<p class="small">${b.partial} of 4 tests not run or not available, so this is a partial result.</p>`:''}
+ <p class="small" style="margin-bottom:0">Covers physical causes only. No device can measure spirits or "energies".</p></div>`;
 }
 
-/* ---------- Save / copy ---------- */
-const KEY='roomScanner.v1';
-function load(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return []}}
-function store(a){try{localStorage.setItem(KEY,JSON.stringify(a));return true}catch(e){return false}}
+/* ---------- live scope ---------- */
+const scope={hist:[],spec:null,min:0,max:1,col:'#14b8dc'};
+function scopeSize(cv){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;cv.width=Math.max(1,r.width*d);cv.height=Math.max(1,r.height*d);return d}
+function drawScope(){
+ const cv=$('scope'),g=cv.getContext('2d');const d=scopeSize(cv),W=cv.width,H=cv.height;g.clearRect(0,0,W,H);
+ g.strokeStyle=css('--grid')||'#334';g.lineWidth=1;for(let i=1;i<4;i++){g.beginPath();g.moveTo(0,H*i/4);g.lineTo(W,H*i/4);g.stroke()}
+ if(scope.spec){const s=scope.spec,bars=48,bw=W/bars;
+  for(let b=0;b<bars;b++){const f0=20*Math.pow(400,b/bars),f1=20*Math.pow(400,(b+1)/bars);let m=0,c=0;
+   for(let i=Math.floor(f0/s.binHz);i<=Math.ceil(f1/s.binHz)&&i<s.data.length;i++){m+=s.data[i];c++}
+   const v=c?m/c/255:0,h=v*H*.95;g.fillStyle=f0<160?css('--warn'):css('--acc');g.fillRect(b*bw+1*d,H-h,bw-2*d,h)}
+  g.fillStyle=css('--mute');g.font=`${11*d}px Inter`;g.fillText('20 Hz',4*d,12*d);g.textAlign='right';g.fillText('8 kHz',W-4*d,12*d);g.textAlign='left';return}
+ const h=scope.hist;if(h.length<2)return;const n=120,s=h.slice(-n),sx=W/(n-1);
+ g.beginPath();s.forEach((v,i)=>{const y=H-(Math.max(scope.min,Math.min(scope.max,v))-scope.min)/(scope.max-scope.min)*H*.9-H*.05;i?g.lineTo(i*sx,y):g.moveTo(i*sx,y)});
+ g.strokeStyle=scope.col;g.lineWidth=2.5*d;g.lineJoin='round';g.stroke();
+ g.lineTo((s.length-1)*sx,H);g.lineTo(0,H);g.closePath();g.fillStyle=scope.col+'22';g.fill();
+}
+let raf=0;function scopeLoop(){drawScope();raf=requestAnimationFrame(scopeLoop)}
+
+/* ---------- scan helpers ---------- */
+function live(name,step,hint){$('lName').textContent=name;$('lStep').textContent=step;$('lHint').textContent=hint;$('lVal').textContent='--'}
+async function countdown(txt){$('cTxt').textContent=txt;$('count').classList.add('on');for(let i=3;i>0;i--){if(stopReq)break;$('cNum').textContent=i;await sleep(1000)}$('count').classList.remove('on')}
+async function timed(fn){const t0=performance.now();while(!stopReq){const p=(performance.now()-t0)/DUR;$('prog').style.width=Math.min(p,1)*100+'%';if(p>=1)break;fn&&fn();await sleep(100)}}
+function setLvl(k,lvl,raw,val,extra){R[k]=Object.assign({lvl,raw,val},extra||{});update()}
+function setNA(k,label,note){R[k]={lvl:null,label,note};update()}
+
+/* ---------- tests ---------- */
+async function testEMF(){
+ if(!('Magnetometer' in window)){setNA('emf','Not available','This phone or browser does not share magnetometer data. In Chrome on Android open chrome://flags, enable "Generic Sensor Extra Classes", then reload.');$('lVal').textContent='N/A';await sleep(2000);return}
+ let s,vals=[];
+ try{s=new Magnetometer({frequency:10});s.addEventListener('reading',()=>{const m=Math.hypot(s.x,s.y,s.z);if(isFinite(m))vals.push(m)});
+  await new Promise((res,rej)=>{s.addEventListener('error',e=>rej(e.error||e));s.start();setTimeout(res,600)})}
+ catch(e){setNA('emf','Blocked','Sensor permission was refused or is not supported.');return}
+ Object.assign(scope,{hist:[],spec:null,min:20,max:200,col:css('--acc')});
+ await timed(()=>{const m=vals[vals.length-1];if(m){scope.hist.push(m);$('lVal').textContent=m.toFixed(0)+' µT'}});s.stop();
+ if(vals.length<5){setNA('emf','No data','The sensor sent no readings.');return}
+ const mx=Math.max(...vals),srt=[...vals].sort((a,b)=>a-b),med=srt[srt.length>>1],sp=mx-med;
+ setLvl('emf',mx>150||sp>80?2:mx>75||sp>30?1:0,mx,`${mx.toFixed(0)} µT`);
+}
+async function testSound(){
+ let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
+ catch(e){setNA('snd','Blocked','Microphone permission was refused.');setNA('hum','Blocked','Needs the microphone.');return}
+ const ctx=new (window.AudioContext||window.webkitAudioContext)(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();
+ an.fftSize=16384;an.smoothingTimeConstant=.3;src.connect(an);
+ const td=new Float32Array(an.fftSize),fd=new Float32Array(an.frequencyBinCount),bd=new Uint8Array(an.frequencyBinCount),acc=new Float64Array(an.frequencyBinCount);
+ const binHz=ctx.sampleRate/an.fftSize;let lv=[];
+ Object.assign(scope,{hist:[],spec:{data:bd,binHz}});
+ await timed(()=>{an.getFloatTimeDomainData(td);let s=0;for(const x of td)s+=x*x;const db=Math.max(0,20*Math.log10(Math.sqrt(s/td.length)+1e-9)+100);
+  lv.push(db);$('lVal').textContent='~'+db.toFixed(0)+' dB';an.getByteFrequencyData(bd);
+  an.getFloatFrequencyData(fd);for(let i=0;i<fd.length;i++)acc[i]+=Math.pow(10,fd[i]/10)});
+ stream.getTracks().forEach(t=>t.stop());ctx.close();scope.spec=null;
+ if(!lv.length)return;
+ lv.sort((a,b)=>a-b);const avg=lv[lv.length>>1];
+ setLvl('snd',avg>58?2:avg>45?1:0,avg,`~${avg.toFixed(0)} dB`);
+ const band=(a,b)=>{let s=0;for(let i=Math.max(1,Math.floor(a/binHz));i<=Math.ceil(b/binHz)&&i<acc.length;i++)s+=acc[i];return s};
+ const share=band(20,150)/(band(20,8000)+1e-20);
+ const pk=f=>{const c=Math.round(f/binHz);let p=0;for(let i=c-1;i<=c+1;i++)p=Math.max(p,acc[i]||0);const nb=[];for(let i=c-12;i<=c+12;i++)if(Math.abs(i-c)>3&&acc[i])nb.push(acc[i]);nb.sort((a,b)=>a-b);return 10*Math.log10(p/(nb[nb.length>>1]||1e-20))};
+ const mains=Math.max(pk(50),pk(100))>12;
+ setLvl('hum',(mains&&share>.35)||share>.6?2:(mains||share>.35)?1:0,share*100,`${Math.round(share*100)}%${mains?' + 50 Hz':''}`,{mains});
+}
+async function testLight(){
+ Object.assign(scope,{hist:[],spec:null,min:0,max:100,col:css('--warn')});
+ if('AmbientLightSensor' in window){try{const s=new AmbientLightSensor();const v=[];s.addEventListener('reading',()=>v.push(s.illuminance));s.start();
+  await timed(()=>{const l=v[v.length-1];if(l!=null){scope.hist.push(Math.min(100,l/5));$('lVal').textContent=l.toFixed(0)+' lux'}});s.stop();
+  if(v.length){const l=v.reduce((a,b)=>a+b)/v.length;setLvl('lgt',l<50?2:l<150?1:0,Math.min(60,l/5),`${l.toFixed(0)} lux`);return}}catch(e){}}
+ let stream;try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:320,height:240}})}
+ catch(e){setNA('lgt','Blocked','Camera permission was refused.');return}
+ const v=document.createElement('video');v.playsInline=true;v.muted=true;v.srcObject=stream;await v.play().catch(()=>{});
+ const c=document.createElement('canvas');c.width=64;c.height=48;const g=c.getContext('2d',{willReadFrequently:true});const lum=[];
+ await timed(()=>{if(!v.videoWidth)return;g.drawImage(v,0,0,64,48);const d=g.getImageData(0,0,64,48).data;let s=0;
+  for(let i=0;i<d.length;i+=4)s+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];const L=s/(d.length/4)/2.55;lum.push(L);scope.hist.push(L);$('lVal').textContent=Math.round(L)+'%'});
+ stream.getTracks().forEach(t=>t.stop());
+ if(!lum.length){setNA('lgt','No data','The camera sent no frames.');return}
+ const L=lum.reduce((a,b)=>a+b)/lum.length;setLvl('lgt',L<22?2:L<37?1:0,L,`${Math.round(L)}%`);
+}
+async function testVib(){
+ if(typeof DeviceMotionEvent==='undefined'){setNA('vib','Not available','No motion sensor access.');return}
+ if(typeof DeviceMotionEvent.requestPermission==='function'){try{if(await DeviceMotionEvent.requestPermission()!=='granted')throw 0}catch(e){setNA('vib','Blocked','Motion permission was refused.');return}}
+ let m=[];const h=e=>{const a=e.accelerationIncludingGravity;if(a&&a.x!=null)m.push(Math.hypot(a.x,a.y,a.z))};
+ window.addEventListener('devicemotion',h);await sleep(1200);m=[];
+ Object.assign(scope,{hist:[],spec:null,min:0,max:.15,col:css('--acc')});
+ await timed(()=>{const w=m.slice(-20);if(w.length>2){const sd=std(w);scope.hist.push(sd);$('lVal').textContent=sd.toFixed(3)}});
+ window.removeEventListener('devicemotion',h);
+ if(m.length<10){setNA('vib','No data','No motion readings. The browser may block motion sensors.');return}
+ const sd=std(m);setLvl('vib',sd>.1?2:sd>.03?1:0,sd,`${sd.toFixed(3)} m/s²`);
+}
+const STEPS={
+ emf:{f:testEMF,name:'EMF / wiring',prep:'Hold the phone. Next, slowly move it near switchboards, walls and the bed head.',hint:'Move the phone slowly near walls and switchboards'},
+ snd:{f:testSound,name:'Noise and hum',prep:'Stay quiet and still. Switch the fan off if you can.',hint:'Stay quiet. Orange bars are the low hum range.'},
+ lgt:{f:testLight,name:'Light',prep:'Point the back camera around the room at eye level.',hint:'Point at the room, not straight at a bulb'},
+ vib:{f:testVib,name:'Vibration',prep:'Put the phone flat on the floor and let go.',hint:'Do not touch the phone'}
+};
+async function run(keys){
+ if(busy)return;busy=true;stopReq=false;$('hero').classList.add('scanning');$('bAll').disabled=true;$('bOne').disabled=true;$('bStop').disabled=false;
+ $('sdot').classList.add('live');$('stat').lastChild.textContent='Scanning';cancelAnimationFrame(raf);scopeLoop();
+ $('hero').scrollIntoView({behavior:'smooth',block:'start'});
+ try{for(let i=0;i<keys.length&&!stopReq;i++){const s=STEPS[keys[i]];live(s.name,`Step ${i+1} of ${keys.length}`,s.hint);$('prog').style.width='0';
+   await countdown(s.prep);if(stopReq)break;await s.f()}}
+ catch(e){toast('Error: '+(e&&e.message||e))}
+ cancelAnimationFrame(raf);busy=false;$('hero').classList.remove('scanning');$('count').classList.remove('on');
+ $('bAll').disabled=false;$('bOne').disabled=false;$('bStop').disabled=true;$('sdot').classList.remove('live');$('stat').lastChild.textContent=stopReq?'Stopped':'Done';
+ update();if(!stopReq)toast('Scan complete');
+}
+$('bAll').onclick=()=>run(['emf','snd','lgt','vib']);
+$('bStop').onclick=()=>{stopReq=true};
+$('bOne').onclick=()=>{$('oneBox').hidden=!$('oneBox').hidden};
+$('bOneGo').onclick=()=>{$('oneBox').hidden=true;run([$('oneSel').value])};
+$('room').addEventListener('input',update);
+
+/* ---------- save / copy ---------- */
+const KEY='roomScanner.v2';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return []}};
+const store=a=>{try{localStorage.setItem(KEY,JSON.stringify(a));return true}catch(e){return false}};
 function drawRooms(){const a=load();
- $('rooms').innerHTML=a.length?a.map((r,i)=>`<div class="room"><b>${esc(r.name)}<br><span class="small">${esc(r.verdict)} · ${esc(r.date)}</span></b><span class="s ${r.vc}">${r.score}</span><button data-i="${i}">Remove</button></div>`).join('')
-  +(a.length>1?`<p class="small">Best: ${esc([...a].sort((x,y)=>y.score-x.score)[0].name)}. Needs most work: ${esc([...a].sort((x,y)=>x.score-y.score)[0].name)}.</p>`:''):'<p class="sub">No rooms saved yet.</p>'}
+ $('rooms').innerHTML=a.length?a.map((r,i)=>`<div class="room"><b>${esc(r.name)}<br><span class="small">${esc(r.band)} · ${esc(r.date)}</span></b><span class="s" style="color:var(--${['good','warn','bad'][r.sev]})">${r.score}</span><button data-i="${i}">Remove</button></div>`).join('')
+  +(a.length>1?`<p class="small">Best: ${esc([...a].sort((x,y)=>y.score-x.score)[0].name)} · Needs most work: ${esc([...a].sort((x,y)=>x.score-y.score)[0].name)}</p>`:''):'<p class="small">No rooms saved yet.</p>'}
 $('rooms').addEventListener('click',e=>{const i=e.target.dataset.i;if(i==null)return;const a=load();a.splice(+i,1);store(a);drawRooms()});
-$('bSave').onclick=()=>{const b=build();if(!b){toast('Run a test first');return}const a=load();a.unshift(b);toast(store(a)?'Room saved':'Could not save on this browser');drawRooms()};
-$('bCopy').onclick=async()=>{const b=build();if(!b){toast('Run a test first');return}
- let txt=plain(b);const a=load();if(a.length>1)txt+='\nOther rooms:\n'+a.map(r=>`${r.name}: ${r.score}/100 - ${r.verdict}`).join('\n');
- try{await navigator.clipboard.writeText(txt);toast('Summary copied')}catch(e){toast('Copy blocked by browser')}};
-$('bReset').onclick=()=>{for(const k in R)delete R[k];CHECKS.forEach(c=>$('c_'+c.k).checked=false);$('room').value='';gauge(0,'Ready');status('Pick a test or run the full scan','Stand in the middle of the room. Each test takes about 12 seconds.');report();window.scrollTo(0,0)};
-$('room').addEventListener('input',report);
+$('bSave').onclick=()=>{const b=build();if(!b){toast('Scan first');return}const a=load();a.unshift({name:b.name,score:b.score,band:b.band,sev:b.sev,date:b.date});toast(store(a)?'Room saved':'Could not save');drawRooms()};
+function plain(b){let t=`ROOM HEALTH SCAN - ${b.name}\n${b.date}\nScore: ${b.score}/100 - ${b.band}\n${b.bandTxt}\n`;
+ IND.forEach(i=>{const r=R[i.k];t+=`\n${i.name}: ${r?(r.lvl!=null?LBL[r.lvl]+' ('+r.val+')':r.label):'not scanned'}`});
+ if(b.combos.length)t+='\n\nConclusion:\n'+b.combos.map(c=>(c.flag?'URGENT: ':'')+c.say).join('\n');
+ if(b.acts.length)t+='\n\nWhat to do:\n'+b.acts.map((f,i)=>`${i+1}. ${f.t}. ${f.a}`).join('\n');return t}
+$('bCopy').onclick=async()=>{const b=build();if(!b){toast('Scan first');return}try{await navigator.clipboard.writeText(plain(b));toast('Summary copied')}catch(e){toast('Copy blocked')}};
+$('bReset').onclick=()=>{for(const k in R)delete R[k];for(const k in C)delete C[k];document.querySelectorAll('.tog').forEach(t=>t.setAttribute('aria-pressed','false'));$('room').value='';$('stat').lastChild.textContent='Ready';update();scrollTo(0,0)};
 
-/* ---------- Tabs ---------- */
-$('tabs').addEventListener('click',e=>{const p=e.target.dataset.p;if(!p)return;
- document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
- ['scan','night','tools'].forEach(k=>$('p-'+k).hidden=k!==p)});
+/* ---------- guide ---------- */
+$('gInd').innerHTML=IND.map(i=>`<div class="gcard"><h3>${i.name}</h3><table><thead><tr><th>Level</th><th>Range</th><th>Meaning and action</th></tr></thead><tbody>
+${[0,1,2].map(l=>`<tr><td><span class="chip g${l}">${LBL[l]}</span></td><td>${esc(i.ranges[l])}</td><td>${esc(i.mean[l])}</td></tr>`).join('')}</tbody></table></div>`).join('');
+$('gCombo').innerHTML=COMBOS.map(c=>`<div class="gcard"><h3>${c.flag?'<span class="chip g2">Red flag</span> ':''}${esc(c.when)}</h3><p style="margin:4px 0 0">${esc(c.say)}</p></div>`).join('');
+$('gScore').innerHTML=BANDS.map((b,i)=>`<tr><td style="white-space:nowrap">${i?b[0]+'–'+(BANDS[i-1][0]-1):b[0]+'–100'}</td><td><span class="chip g${b[3]}">${b[1]}</span></td><td>${b[2]}</td></tr>`).join('');
 
-/* ---------- Night watch ---------- */
-const N={on:false,events:[],t0:0};
+/* ---------- navigation ---------- */
+$('bn').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const p=b.dataset.p;
+ document.querySelectorAll('#bn button').forEach(x=>x.classList.toggle('on',x===b));
+ ['scan','night','heart','guide','more'].forEach(k=>$('p-'+k).hidden=k!==p);scrollTo(0,0)});
+
+/* ---------- night watch ---------- */
+const N={on:false,events:[],t0:0,hist:[]};
 const fmtT=d=>d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 const hms=ms=>{const s=Math.floor(ms/1000);return [s/3600|0,(s/60|0)%60,s%60].map(x=>String(x).padStart(2,'0')).join(':')};
 function cause(e){
- if(e.kind==='move')return e.light?'Light change: car headlights, a lamp, phone screen or daylight':'Movement: a pet, curtain in the breeze, insect near the lens or a person';
- if(e.kind==='vib')return 'Vibration only: water pump, lift, heavy vehicle or machine in the building';
+ if(e.kind==='move')return e.light?'Light change: car headlights, a lamp, a phone screen or daylight':'Movement: a pet, a curtain in the breeze, an insect near the lens or a person';
+ if(e.kind==='vib')return 'Vibration only: water pump, lift, heavy vehicle or a machine in the building';
  if(e.dur>4)return e.vib?'Long sound with vibration: pump, motor or heavy traffic':e.hz<300?'Long low sound: AC, fridge, fan, generator or traffic':'Long sound: voices, TV, music or neighbours';
- if(e.vib&&e.hz<300)return 'Thud with vibration: door, footsteps upstairs, furniture moved or a lift';
+ if(e.vib&&e.hz<300)return 'Thud with vibration: a door, footsteps upstairs, furniture moved or a lift';
  if(e.hf>.45)return 'Scratching or rustling: rats, lizards, birds, insects or plastic bags';
  if(e.hz<300)return 'Knock: water pipes, a door, footsteps or something falling';
- if(e.hz<2000)return 'Creak or click: wood or furniture settling as temperature drops, ceiling fan, AC';
- return 'Short sharp sound: tick, drip, insect, or a phone or appliance beep';
+ if(e.hz<2000)return 'Creak or click: wood or furniture settling as the temperature drops, ceiling fan, AC';
+ return 'Short sharp sound: a tick, drip, insect, or an appliance beep';
 }
-function group(c){return c.split(':')[0]}
+const grp=c=>c.split(':')[0];
+function drawNScope(){const cv=$('nScope'),g=cv.getContext('2d'),d=scopeSize(cv),Wd=cv.width,H=cv.height;g.clearRect(0,0,Wd,H);
+ g.strokeStyle=css('--grid');for(let i=1;i<4;i++){g.beginPath();g.moveTo(0,H*i/4);g.lineTo(Wd,H*i/4);g.stroke()}
+ const h=N.hist.slice(-600);if(h.length<2)return;const sx=Wd/(Math.max(h.length,120)-1),y=v=>H-Math.max(0,Math.min(1,(v-20)/60))*H*.9-H*.05;
+ if(N.base!=null){g.setLineDash([6*d,6*d]);g.strokeStyle=css('--warn');g.beginPath();const ty=y(N.base+(+$('nSens').value));g.moveTo(0,ty);g.lineTo(Wd,ty);g.stroke();g.setLineDash([])}
+ g.beginPath();h.forEach((v,i)=>i?g.lineTo(i*sx,y(v.db)):g.moveTo(0,y(v.db)));g.strokeStyle=css('--acc');g.lineWidth=2*d;g.stroke();
+ g.fillStyle=css('--bad');h.forEach((v,i)=>{if(v.ev){g.beginPath();g.arc(i*sx,y(v.db),3.5*d,0,7);g.fill()}});
+}
 async function nStart(){
- if(N.on)return;
- let stream;
+ if(N.on)return;let stream;
  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:$('nCam').checked?{facingMode:'environment',width:320,height:240}:false})}
  catch(e){toast('Microphone/camera permission refused');return}
- Object.assign(N,{on:true,events:[],t0:Date.now(),stream,base:null,cal:[],cur:null,acc:[],motion:[],lastLum:null,clips:0});
+ Object.assign(N,{on:true,events:[],t0:Date.now(),t1:0,stream,base:null,cal:[],cur:null,acc:[],lastLum:null,clips:0,hist:[],sec:0,secMax:0,lastVib:0,lastMove:0});
  try{N.wake=await navigator.wakeLock.request('screen')}catch(e){N.wake=null}
- N.ctx=new (window.AudioContext||window.webkitAudioContext)();
- const an=N.ctx.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0;N.ctx.createMediaStreamSource(stream).connect(an);
- N.an=an;N.td=new Float32Array(an.fftSize);N.fd=new Float32Array(an.frequencyBinCount);N.binHz=N.ctx.sampleRate/an.fftSize;
+ N.ctx=new (window.AudioContext||window.webkitAudioContext)();const an=N.ctx.createAnalyser();an.fftSize=4096;an.smoothingTimeConstant=0;N.ctx.createMediaStreamSource(stream).connect(an);
+ Object.assign(N,{an,td:new Float32Array(an.fftSize),fd:new Float32Array(an.frequencyBinCount),binHz:N.ctx.sampleRate/an.fftSize});
  N.mh=e=>{const a=e.accelerationIncludingGravity;if(a&&a.x!=null)N.acc.push(Math.hypot(a.x,a.y,a.z));if(N.acc.length>60)N.acc.shift()};
  try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function')await DeviceMotionEvent.requestPermission()}catch(e){}
  window.addEventListener('devicemotion',N.mh);
- if($('nCam').checked&&stream.getVideoTracks().length){const v=$('nVid');v.srcObject=new MediaStream(stream.getVideoTracks());v.play().catch(()=>{});
+ N.g=null;if($('nCam').checked&&stream.getVideoTracks().length){const v=$('nVid');v.srcObject=new MediaStream(stream.getVideoTracks());v.play().catch(()=>{});
   N.cv=document.createElement('canvas');N.cv.width=64;N.cv.height=48;N.g=N.cv.getContext('2d',{willReadFrequently:true});N.prev=null;N.camT=0}
- $('nStart').disabled=true;$('nStop').disabled=false;$('nState').textContent='Calibrating: keep the room quiet for 10 seconds';
+ $('nStart').disabled=true;$('nStop').disabled=false;$('nState').textContent='Calibrating (10 s), keep quiet';
  N.timer=setInterval(nTick,100);nDraw();
 }
 function nTick(){
  const now=Date.now();$('nTime').textContent=hms(now-N.t0);
  N.an.getFloatTimeDomainData(N.td);let s=0;for(const x of N.td)s+=x*x;const db=Math.max(0,20*Math.log10(Math.sqrt(s/N.td.length)+1e-9)+100);
- $('nBar').style.width=Math.min(100,Math.max(0,(db-20)*1.6))+'%';
- const vibSd=N.acc.length>10?std(N.acc.slice(-20)):0,vib=vibSd>0.05;
- if(N.base==null){N.cal.push(db);if(now-N.t0>10000){N.cal.sort((a,b)=>a-b);N.base=N.cal[N.cal.length>>1];$('nState').textContent='Watching'}
-  $('nLive').textContent=`Level ~${db.toFixed(0)} dB`;return}
- // slowly adapt baseline to quiet level
+ N.secMax=Math.max(N.secMax,db);if(++N.sec>=10){N.hist.push({db:N.secMax,ev:!!N.cur});if(N.hist.length>3600)N.hist.shift();N.sec=0;N.secMax=0;drawNScope()}
+ const vibSd=N.acc.length>10?std(N.acc.slice(-20)):0,vib=vibSd>.05;
+ if(N.base==null){N.cal.push(db);if(now-N.t0>10000){N.cal.sort((a,b)=>a-b);N.base=N.cal[N.cal.length>>1];$('nState').textContent='Watching'}$('nLive').textContent=`Level ~${db.toFixed(0)} dB`;return}
  if(!N.cur&&db<N.base+3)N.base=N.base*.998+db*.002;
  const thr=N.base+(+$('nSens').value);
- $('nLive').textContent=`Level ~${db.toFixed(0)} dB · quiet level ~${N.base.toFixed(0)} dB · ${N.events.length} events`;
+ $('nLive').textContent=`Now ~${db.toFixed(0)} dB · quiet level ~${N.base.toFixed(0)} dB · dashed line = trigger`;
  if(db>thr){
-  if(!N.cur){N.cur={kind:'sound',t:new Date(),start:now,peak:db,vib:false,last:now};
-   if($('nClip').checked&&N.clips<60&&window.MediaRecorder){try{const r=new MediaRecorder(new MediaStream(N.stream.getAudioTracks()));const ch=[];r.ondataavailable=e=>ch.push(e.data);const ev=N.cur;r.onstop=()=>{ev.clip=URL.createObjectURL(new Blob(ch,{type:r.mimeType}));nDraw()};r.start();N.cur.rec=r;N.clips++}catch(e){}}}
+  if(!N.cur){N.cur={kind:'sound',t:new Date(),start:now,peak:db,vib:false,last:now,hz:0,hf:0};
+   if($('nClip').checked&&N.clips<60&&window.MediaRecorder){try{const r=new MediaRecorder(new MediaStream(N.stream.getAudioTracks()));const ch=[],ev=N.cur;r.ondataavailable=e=>ch.push(e.data);r.onstop=()=>{ev.clip=URL.createObjectURL(new Blob(ch,{type:r.mimeType}));nDraw()};r.start();N.cur.rec=r;N.clips++}catch(e){}}}
   const c=N.cur;c.last=now;if(vib)c.vib=true;
   if(db>=c.peak){c.peak=db;N.an.getFloatFrequencyData(N.fd);let best=0,bi=1,hi=0,tot=0;
    for(let i=1;i<N.fd.length;i++){const f=i*N.binHz;if(f<40||f>12000)continue;const p=Math.pow(10,N.fd[i]/10);tot+=p;if(f>2500)hi+=p;if(p>best){best=p;bi=i}}
    c.hz=bi*N.binHz;c.hf=tot?hi/tot:0}
- }else if(N.cur&&now-N.cur.last>800){nEnd(now)}
- if(N.cur&&now-N.cur.start>15000)nEnd(now);
- if(!N.cur&&vibSd>0.1&&(!N.lastVib||now-N.lastVib>10000)){N.lastVib=now;nAdd({kind:'vib',t:new Date(),dur:0,peak:null,vibSd})}
- if(N.g&&now-N.camT>500){N.camT=now;const v=$('nVid');if(v.videoWidth){N.g.drawImage(v,0,0,64,48);const d=N.g.getImageData(0,0,64,48).data,gray=new Float32Array(64*48);let L=0;
-  for(let i=0,j=0;i<d.length;i+=4,j++){gray[j]=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];L+=gray[j]}L/=gray.length;
-  if(N.prev){let diff=0;for(let j=0;j<gray.length;j++)diff+=Math.abs(gray[j]-N.prev[j]);diff/=gray.length;
-   const light=N.lastLum!=null&&Math.abs(L-N.lastLum)>25;
-   if((diff>12||light)&&(!N.lastMove||now-N.lastMove>8000)){N.lastMove=now;nAdd({kind:'move',t:new Date(),dur:0,light})}}
-  N.prev=gray;N.lastLum=L}}
+ }else if(N.cur&&now-N.cur.last>800)nEnd();
+ if(N.cur&&now-N.cur.start>15000)nEnd();
+ if(!N.cur&&vibSd>.1&&now-N.lastVib>10000){N.lastVib=now;nAdd({kind:'vib',t:new Date(),dur:0})}
+ if(N.g&&now-N.camT>500){N.camT=now;const v=$('nVid');if(v.videoWidth){N.g.drawImage(v,0,0,64,48);const d=N.g.getImageData(0,0,64,48).data,gr=new Float32Array(3072);let L=0;
+  for(let i=0,j=0;i<d.length;i+=4,j++){gr[j]=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];L+=gr[j]}L/=gr.length;
+  if(N.prev){let df=0;for(let j=0;j<gr.length;j++)df+=Math.abs(gr[j]-N.prev[j]);df/=gr.length;const light=N.lastLum!=null&&Math.abs(L-N.lastLum)>25;
+   if((df>12||light)&&now-N.lastMove>8000){N.lastMove=now;nAdd({kind:'move',t:new Date(),dur:0,light})}}N.prev=gr;N.lastLum=L}}
 }
-function nEnd(now){const c=N.cur;N.cur=null;c.dur=(c.last-c.start)/1000;if(c.rec&&c.rec.state!=='inactive')try{c.rec.stop()}catch(e){}delete c.rec;nAdd(c)}
+function nEnd(){const c=N.cur;N.cur=null;c.dur=(c.last-c.start)/1000;if(c.rec&&c.rec.state!=='inactive')try{c.rec.stop()}catch(e){}delete c.rec;nAdd(c)}
 function nAdd(e){e.cause=cause(e);N.events.push(e);if(N.events.length>500)N.events.shift();nDraw()}
-function nStop(){
- if(!N.on)return;N.on=false;clearInterval(N.timer);if(N.cur)nEnd(Date.now());
- N.stream.getTracks().forEach(t=>t.stop());try{N.ctx.close()}catch(e){}window.removeEventListener('devicemotion',N.mh);
- try{N.wake&&N.wake.release()}catch(e){}N.g=null;$('nVid').srcObject=null;
- N.t1=Date.now();$('nStart').disabled=false;$('nStop').disabled=true;$('nState').textContent='Stopped';$('nLive').textContent=`Session ended · ${N.events.length} events recorded`;$('nBar').style.width='0';nDraw();
-}
-document.addEventListener('visibilitychange',async()=>{if(N.on&&document.visibilityState==='visible'&&!N.wake){try{N.wake=await navigator.wakeLock.request('screen')}catch(e){}}});
-function nSummary(){
- const ev=N.events;if(!N.t0)return null;const end=N.t1||Date.now(),dur=end-N.t0;
- const by={};ev.forEach(e=>{const g=group(e.cause);by[g]=(by[g]||0)+1});
- const top=Object.entries(by).sort((a,b)=>b[1]-a[1]);
- const hrs={};ev.forEach(e=>{const h=e.t.getHours();hrs[h]=(hrs[h]||0)+1});
- const busy=Object.entries(hrs).sort((a,b)=>b[1]-a[1])[0];
- let concl;
- if(!ev.length)concl='The room was quiet and still the whole time. Nothing unusual was recorded.';
- else{concl=`${ev.length} events in ${hms(dur)}. Most common: ${top.slice(0,3).map(([k,v])=>`${k.toLowerCase()} (${v})`).join(', ')}.`;
-  if(by['Scratching or rustling']>=3)concl+=' Repeated scratching points to rats, lizards or birds. Check the false ceiling, ducts and drain openings.';
-  if(by['Knock']>=3)concl+=' Repeated knocks are usually water pipes (water hammer) or doors. Check when the society water pump runs.';
-  if(by['Creak or click']>=3)concl+=' Creaks and clicks at night are normal: wood, furniture and the building shrink as the temperature drops.';
-  if((by['Vibration only']||0)+(by['Thud with vibration']||0)>=3)concl+=' Vibration keeps recurring, likely a pump, lift or traffic. It can disturb sleep even when you do not notice it.';
-  concl+=' Every event has an ordinary physical explanation; play the clips to confirm.'}
- return {dur,ev,top,hrs,busy,concl};
-}
-function nDraw(){
- const s=nSummary();if(!s){return}
- const hs=[];if(s.ev.length){const a=new Date(N.t0).getHours(),b=new Date(N.t1||Date.now()).getHours();let h=a,n=0;do{hs.push(h);h=(h+1)%24;n++}while(h!==(b+1)%24&&n<24)}
- const mx=Math.max(1,...hs.map(h=>s.hrs[h]||0));
- $('nSum').innerHTML=`<div class="slip"><div><span class="score">${s.ev.length}</span> <span class="small">events in ${hms(s.dur)}</span></div>
- <p style="margin:12px 0 0">${esc(s.concl)}</p>
- ${s.top.length?`<ul>${s.top.map(([k,v])=>`<li><b>${esc(k)}</b>: ${v}</li>`).join('')}</ul>`:''}
- ${hs.length>1?`<div class="hrs">${hs.map(h=>`<i style="height:${(s.hrs[h]||0)/mx*100}%" title="${h}:00"></i>`).join('')}</div><div class="small">Events per hour, ${hs[0]}:00 to ${hs[hs.length-1]}:00${s.busy?` · busiest ${s.busy[0]}:00`:''}</div>`:''}</div>`;
- $('nList').innerHTML=s.ev.length?[...s.ev].reverse().slice(0,200).map((e,i)=>`<div class="ev"><span class="tm">${fmtT(e.t)}</span><span><b>${e.kind==='sound'?`Sound ~${e.peak.toFixed(0)} dB, ${e.dur.toFixed(1)}s`:e.kind==='vib'?'Vibration':'Movement'}</b><br><span class="cz">${esc(e.cause)}</span></span>${e.clip?`<button data-c="${e.clip}">Play</button>`:'<span></span>'}</div>`).join(''):'<p class="sub">No events yet.</p>';
-}
-$('nList').addEventListener('click',e=>{const c=e.target.dataset.c;if(!c)return;const a=new Audio(c);a.play().catch(()=>toast('Could not play clip'))});
+function nStop(){if(!N.on)return;N.on=false;clearInterval(N.timer);if(N.cur)nEnd();
+ N.stream.getTracks().forEach(t=>t.stop());try{N.ctx.close()}catch(e){}window.removeEventListener('devicemotion',N.mh);try{N.wake&&N.wake.release()}catch(e){}
+ N.g=null;$('nVid').srcObject=null;N.t1=Date.now();$('nStart').disabled=false;$('nStop').disabled=true;$('nState').textContent='Stopped';$('nLive').textContent=`Session ended · ${N.events.length} events`;nDraw();drawNScope()}
+document.addEventListener('visibilitychange',async()=>{if(N.on&&document.visibilityState==='visible'){try{N.wake=await navigator.wakeLock.request('screen')}catch(e){}}});
+function nSummary(){if(!N.t0)return null;const ev=N.events,dur=(N.t1||Date.now())-N.t0,by={},hrs={};
+ ev.forEach(e=>{const g=grp(e.cause);by[g]=(by[g]||0)+1;const h=e.t.getHours();hrs[h]=(hrs[h]||0)+1});
+ const top=Object.entries(by).sort((a,b)=>b[1]-a[1]),busy=Object.entries(hrs).sort((a,b)=>b[1]-a[1])[0];let c;
+ if(!ev.length)c='The room was quiet and still the whole time. Nothing unusual was recorded.';
+ else{c=`${ev.length} events in ${hms(dur)}. Most common: ${top.slice(0,3).map(([k,v])=>`${k.toLowerCase()} (${v})`).join(', ')}.`;
+  if((by['Scratching or rustling']||0)>=3)c+=' Repeated scratching points to rats, lizards or birds. Check the false ceiling, ducts and drain openings.';
+  if((by['Knock']||0)>=3)c+=' Repeated knocks are usually water pipes or doors. Check when the society water pump runs.';
+  if((by['Creak or click']||0)>=3)c+=' Creaks and clicks at night are normal: wood, furniture and the building shrink as it cools.';
+  if((by['Vibration only']||0)+(by['Thud with vibration']||0)>=3)c+=' Vibration keeps coming back, likely a pump, lift or traffic. It can disturb sleep even unnoticed.';
+  c+=' Each event has an ordinary physical explanation; play the clips to confirm.'}
+ return {dur,ev,top,hrs,busy,c}}
+function nDraw(){const s=nSummary();if(!s)return;$('nCountEv').textContent=s.ev.length+' events';
+ $('nSum').innerHTML=`<div class="report"><div class="verdict">${s.ev.length} events · ${hms(s.dur)}</div><p style="margin:0">${esc(s.c)}</p>${s.top.length?`<ol>${s.top.map(([k,v])=>`<li><b>${esc(k)}</b>: ${v}</li>`).join('')}</ol>`:''}${s.busy?`<p class="small" style="margin:0">Busiest hour: ${s.busy[0]}:00</p>`:''}</div>`;
+ $('nList').innerHTML=s.ev.length?[...s.ev].reverse().slice(0,200).map(e=>`<div class="ev"><span class="tm">${fmtT(e.t)}</span><span><b>${e.kind==='sound'?`Sound ~${e.peak.toFixed(0)} dB · ${e.dur.toFixed(1)} s`:e.kind==='vib'?'Vibration':'Movement'}</b><br><span class="cz">${esc(e.cause)}</span></span>${e.clip?`<button data-c="${e.clip}">Play</button>`:'<span></span>'}</div>`).join(''):'<p class="small">No events yet.</p>'}
+$('nList').addEventListener('click',e=>{const c=e.target.dataset.c;if(c)new Audio(c).play().catch(()=>toast('Could not play'))});
 $('nStart').onclick=nStart;$('nStop').onclick=nStop;
 $('nCopy').onclick=async()=>{const s=nSummary();if(!s){toast('Run night watch first');return}
- let t=`NIGHT WATCH - ${($('room').value||'Room').trim()}\nStarted ${new Date(N.t0).toLocaleString('en-IN')}, ran ${hms(s.dur)}\n\n${s.concl}\n`;
+ let t=`NIGHT WATCH - ${($('room').value||'Room').trim()}\nStarted ${new Date(N.t0).toLocaleString('en-IN')}, ran ${hms(s.dur)}\n\n${s.c}\n`;
  if(s.ev.length)t+='\nEvents:\n'+s.ev.slice(0,80).map(e=>`${fmtT(e.t)} - ${e.cause}`).join('\n');
- try{await navigator.clipboard.writeText(t);toast('Summary copied')}catch(e){toast('Copy blocked by browser')}};
+ try{await navigator.clipboard.writeText(t);toast('Summary copied')}catch(e){toast('Copy blocked')}};
 
-/* ---------- Thermal view ---------- */
-let tStream=null;
-async function tShow(id){if(tStream)tStream.getTracks().forEach(t=>t.stop());
- try{tStream=await navigator.mediaDevices.getUserMedia({video:id?{deviceId:{exact:id}}:true});$('tVid').srcObject=tStream;await $('tVid').play().catch(()=>{})}
- catch(e){toast('Could not open that camera')}}
-$('tFind').onclick=async()=>{
- try{const s=await navigator.mediaDevices.getUserMedia({video:true});s.getTracks().forEach(t=>t.stop())}catch(e){toast('Camera permission refused');return}
+/* ---------- thermal ---------- */
+let tStream=null;const TH=/therm|infiray|flir|seek|topdon|uvc|usb/i;
+async function tShow(id){if(tStream)tStream.getTracks().forEach(t=>t.stop());try{tStream=await navigator.mediaDevices.getUserMedia({video:id?{deviceId:{exact:id}}:true});$('tVid').srcObject=tStream;await $('tVid').play().catch(()=>{})}catch(e){toast('Could not open that camera')}}
+$('tFind').onclick=async()=>{try{const s=await navigator.mediaDevices.getUserMedia({video:true});s.getTracks().forEach(t=>t.stop())}catch(e){toast('Camera permission refused');return}
  const cams=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
- $('tSel').innerHTML=cams.map((c,i)=>`<option value="${esc(c.deviceId)}">${esc(c.label||'Camera '+(i+1))}${/therm|infiray|flir|seek|topdon|uvc|usb/i.test(c.label)?' (likely thermal)':''}</option>`).join('');
- const th=cams.find(c=>/therm|infiray|flir|seek|topdon|uvc|usb/i.test(c.label));
- if(th)$('tSel').value=th.deviceId;
- $('tNote').textContent=th?'Thermal camera found. Blue or purple patches are cold, yellow or white are warm.':`${cams.length} camera(s) found, none look like a thermal camera. Plug one in and tap Find cameras again.`;
- tShow($('tSel').value)};
+ $('tSel').innerHTML=cams.map((c,i)=>`<option value="${esc(c.deviceId)}">${esc(c.label||'Camera '+(i+1))}${TH.test(c.label)?' (likely thermal)':''}</option>`).join('');
+ const th=cams.find(c=>TH.test(c.label));if(th)$('tSel').value=th.deviceId;
+ $('tNote').textContent=th?'Thermal camera found. Blue or purple = cold, yellow or white = warm.':`${cams.length} camera(s) found, none look like a thermal camera. Plug one in and tap Find cameras again.`;tShow($('tSel').value)};
 $('tSel').onchange=()=>tShow($('tSel').value);
 
-/* ---------- Spirit box test ---------- */
+/* ---------- spirit box test ---------- */
 let sBusy=false;
 $('sPlay').onclick=async()=>{if(sBusy)return;sBusy=true;$('sPlay').disabled=true;$('sOut').hidden=true;
- try{const ctx=new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();
-  const len=ctx.sampleRate*2,buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
-  const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
-  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.Q.value=4;const g=ctx.createGain();g.gain.value=.25;
-  src.connect(bp).connect(g).connect(ctx.destination);src.start();
-  const T=ctx.currentTime;for(let t=0;t<30;t+=.09){bp.frequency.setValueAtTime(300+Math.random()*2700,T+t);g.gain.setValueAtTime(Math.random()<.2?.05:.25,T+t)}
-  let left=30;$('sPlay').textContent='Listening… 30s';
-  await new Promise(r=>{const iv=setInterval(()=>{left--;$('sPlay').textContent=`Listening… ${left}s`;if(left<=0){clearInterval(iv);r()}},1000)});
-  src.stop();ctx.close();
- }catch(e){toast('Audio blocked by browser')}
- $('sPlay').textContent='Play 30 seconds of sweeping static';$('sPlay').disabled=false;sBusy=false;$('sOut').hidden=false;
- $('sOut').scrollIntoView({behavior:'smooth',block:'nearest'})};
+ try{const ctx=new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();const len=ctx.sampleRate*2,buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.Q.value=4;const g=ctx.createGain();g.gain.value=.25;
+  src.connect(bp).connect(g).connect(ctx.destination);src.start();const T=ctx.currentTime;for(let t=0;t<30;t+=.09){bp.frequency.setValueAtTime(300+Math.random()*2700,T+t);g.gain.setValueAtTime(Math.random()<.2?.05:.25,T+t)}
+  for(let left=30;left>0;left--){$('sPlay').textContent=`Listening… ${left} s`;await sleep(1000)}src.stop();ctx.close()}catch(e){toast('Audio blocked')}
+ $('sPlay').textContent='Play 30 seconds of static';$('sPlay').disabled=false;sBusy=false;$('sOut').hidden=false};
 
-rowsHTML();drawRooms();
+
+/* ---------- heart rate (camera PPG) ---------- */
+const H={on:false};
+const HKEY='roomScanner.hr',BKEY='roomScanner.bp';
+const ldK=k=>{try{return JSON.parse(localStorage.getItem(k))||[]}catch(e){return []}};
+const stK=(k,a)=>{try{localStorage.setItem(k,JSON.stringify(a))}catch(e){}};
+function hDraw(){const cv=$('hScope'),g=cv.getContext('2d'),d=scopeSize(cv),Wd=cv.width,Ht=cv.height;g.clearRect(0,0,Wd,Ht);
+ g.strokeStyle=css('--grid');for(let i=1;i<4;i++){g.beginPath();g.moveTo(0,Ht*i/4);g.lineTo(Wd,Ht*i/4);g.stroke()}
+ if(!H.f||H.f.length<10)return;const n=Math.min(H.f.length,150),s=H.f.slice(-n);let mn=Infinity,mx=-Infinity;s.forEach(v=>{mn=Math.min(mn,v);mx=Math.max(mx,v)});const rg=mx-mn||1,sx=Wd/(n-1);
+ g.beginPath();s.forEach((v,i)=>{const y=Ht*.1+(1-(v-mn)/rg)*Ht*.8;i?g.lineTo(i*sx,y):g.moveTo(0,y)});g.strokeStyle=css('--bad');g.lineWidth=2.5*d;g.lineJoin='round';g.stroke()}
+function hFilter(){const r=H.r,t=H.t,n=r.length;if(n<30)return;const out=[];
+ for(let i=0;i<n;i++){let j=i,s=0,c=0;while(j>=0&&t[i]-t[j]<1000){s+=r[j];c++;j--}const hp=-(r[i]-s/c);out.push(hp)}
+ H.f=out.map((v,i,a)=>(v+(a[i-1]??v)+(a[i-2]??v))/3)}
+function hBeats(from){const f=H.f,t=H.t;if(!f)return null;const idx=[];let thr=0,c=0;
+ for(let i=0;i<f.length;i++)if(t[i]>=from){thr+=Math.abs(f[i]);c++}thr=c?thr/c*.5:0;
+ for(let i=2;i<f.length-2;i++){if(t[i]<from)continue;if(f[i]>thr&&f[i]>=f[i-1]&&f[i]>=f[i-2]&&f[i]>f[i+1]&&f[i]>f[i+2]){if(!idx.length||t[i]-t[idx[idx.length-1]]>330)idx.push(i)}}
+ const iv=[];for(let k=1;k<idx.length;k++)iv.push(t[idx[k]]-t[idx[k-1]]);
+ const ok=iv.filter(x=>x>285&&x<1700);if(ok.length<4)return null;const srt=[...ok].sort((a,b)=>a-b),med=srt[srt.length>>1];
+ const good=ok.filter(x=>Math.abs(x-med)<med*.3);if(good.length<4)return null;
+ const m=good.reduce((a,b)=>a+b)/good.length,cv=std(good)/m;return {bpm:60000/m,cv,beats:good.length,rej:ok.length-good.length}}
+async function hStart(){
+ if(H.on)return;let stream;
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:320},height:{ideal:240},frameRate:{ideal:30}}})}
+ catch(e){toast('Camera permission refused');return}
+ const track=stream.getVideoTracks()[0];let torch=false;
+ try{const cap=track.getCapabilities?track.getCapabilities():{};if(cap.torch){await track.applyConstraints({advanced:[{torch:true}]});torch=true}}catch(e){}
+ const v=document.createElement('video');v.playsInline=true;v.muted=true;v.srcObject=stream;await v.play().catch(()=>{});
+ const cv=document.createElement('canvas');cv.width=40;cv.height=30;const g=cv.getContext('2d',{willReadFrequently:true});
+ Object.assign(H,{on:true,stream,v,g,r:[],t:[],f:null,t0:0,lastF:0,fingerOk:false,okSince:0,torch});
+ $('hStart').disabled=true;$('hStop').disabled=false;$('hRes').innerHTML='';$('hState').textContent='Place your finger';$('hBpm').textContent='--';
+ $('hHint').textContent=torch?'Flash is on. Cover camera and flash fully.':'No flash on this phone: measure next to a bright light.';
+ const MEAS=30000;
+ const step=()=>{if(!H.on)return;if(v.videoWidth){g.drawImage(v,0,0,40,30);const d=g.getImageData(0,0,40,30).data;let R=0,G=0,B=0;for(let i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2]}const n=d.length/4;R/=n;G/=n;B/=n;
+   const finger=R>90&&R>G*1.8&&R>B*1.8;const now=performance.now();
+   $('hFinger').textContent=finger?'Finger: detected':'Finger: not detected';$('hFinger').style.color=finger?'var(--good)':'var(--warn)';
+   if(!finger){if(H.t0){H.r=[];H.t=[];H.f=null;H.t0=0;$('hState').textContent='Finger moved, starting again'}H.okSince=0}
+   else{if(!H.okSince)H.okSince=now;if(!H.t0&&now-H.okSince>1500){H.t0=now;$('hState').textContent='Measuring, stay still'}
+    if(H.t0){H.r.push(R);H.t.push(now);if(H.r.length>2000){H.r.shift();H.t.shift()}
+     if(now-H.lastF>250){H.lastF=now;hFilter();hDraw();const el=now-H.t0;$('hProg').style.width=Math.min(1,el/MEAS)*100+'%';
+      if(el>8000){const b=hBeats(now-8000);if(b)$('hBpm').textContent=Math.round(b.bpm)}
+      if(el>=MEAS){hFinish();return}}}}}
+  (v.requestVideoFrameCallback?v.requestVideoFrameCallback(step):requestAnimationFrame(step))};
+ step();
+}
+function hStopCam(){H.on=false;try{H.stream.getTracks().forEach(t=>t.stop())}catch(e){}$('hStart').disabled=false;$('hStop').disabled=true;$('hProg').style.width='0'}
+function hCat(b){return b<50?[2,'Low','Below 50 at rest is low. Normal for some very fit people; if you feel dizzy, faint or tired, see a doctor.']:b<60?[1,'Slightly low','50–59 at rest is common in fit people and during deep rest.']:b<=100?[0,'Normal','60–100 at rest is the normal adult range.']:b<=120?[1,'High','Above 100 at rest. Can be stress, caffeine, fever, dehydration or recent activity. Rest 5 minutes and measure again.']:[2,'Very high','Above 120 at rest. Rest and re-check; if it stays high or you feel unwell, see a doctor.']}
+function hFinish(){hFilter();const b=hBeats(H.t0+2000);hStopCam();
+ if(!b){$('hState').textContent='Could not read a clear pulse';$('hBpm').textContent='--';$('hRes').innerHTML='<div class="report"><p style="margin:0">The signal was too weak or noisy. Cover the camera and flash fully with your fingertip, press lightly (not hard), keep your hand on a table and stay still.</p></div>';return}
+ const bpm=Math.round(b.bpm),q=b.cv<.08&&b.rej<3?'Good':b.cv<.15?'Fair':'Poor',[sv,lbl,txt]=hCat(bpm);
+ $('hBpm').textContent=bpm;$('hState').textContent='Done';
+ $('hRes').innerHTML=`<div class="report"><div class="verdict" style="color:var(--${['good','warn','bad'][sv]})">${bpm} bpm · ${lbl}</div><p style="margin:0">${esc(txt)}</p>
+ <p class="small" style="margin-bottom:0">Signal quality: ${q} (${b.beats} beats read)${b.cv>.15?'. Beat-to-beat timing varied a lot; this can be movement, or an irregular rhythm. If it keeps happening at rest, mention it to a doctor.':'.'} Wellness reading only, not a medical device.</p></div>`;
+ const a=ldK(HKEY);a.unshift({bpm,q,lbl,sv,date:new Date().toLocaleString('en-IN')});stK(HKEY,a.slice(0,50));hHist()}
+function hHist(){const a=ldK(HKEY);$('hHist').innerHTML=a.length?a.slice(0,10).map((r,i)=>`<div class="room"><b>${r.bpm} bpm · ${esc(r.lbl)}<br><span class="small">${esc(r.date)} · quality ${esc(r.q)}</span></b><span></span><button data-hi="${i}">Remove</button></div>`).join(''):'<p class="small">No readings yet.</p>'}
+$('hHist').addEventListener('click',e=>{const i=e.target.dataset.hi;if(i==null)return;const a=ldK(HKEY);a.splice(+i,1);stK(HKEY,a);hHist()});
+$('hStart').onclick=hStart;$('hStop').onclick=()=>{hStopCam();$('hState').textContent='Stopped'};
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&H.on){hStopCam();$('hState').textContent='Stopped'}});
+
+/* ---------- BP log ---------- */
+const BPC=[
+ {n:'Normal',r:'Below 120 / below 80',s:0,t:'Healthy range. Keep checking now and then.'},
+ {n:'Elevated',r:'120–129 / below 80',s:1,t:'Slightly raised. Cut salt, stay active, sleep well and check again in a few weeks.'},
+ {n:'High, stage 1',r:'130–139 / 80–89',s:1,t:'High blood pressure, stage 1. Check on several days; if it stays here, talk to a doctor.'},
+ {n:'High, stage 2',r:'140+ / 90+',s:2,t:'High blood pressure, stage 2. See a doctor soon.'},
+ {n:'Crisis',r:'Above 180 / above 120',s:2,t:'Very high. Rest 5 minutes and re-check. If it is still this high, or you have chest pain, breathlessness, weakness or blurred vision, get emergency care now.'}];
+function bpCat(S,D){return S>180||D>120?BPC[4]:S>=140||D>=90?BPC[3]:S>=130||D>=80?BPC[2]:S>=120?BPC[1]:BPC[0]}
+$('bpTbl').innerHTML=BPC.map(c=>`<tr><td><span class="chip g${c.s}">${c.n}</span></td><td>${c.r}</td></tr>`).join('');
+function bpHist(){const a=ldK(BKEY);$('bpHist').innerHTML=a.slice(0,10).map((r,i)=>`<div class="room"><b>${r.s}/${r.d}${r.p?' · pulse '+r.p:''}<br><span class="small">${esc(r.c)} · ${esc(r.date)}</span></b><span class="chip g${r.sv}">${esc(r.c)}</span><button data-bi="${i}">Remove</button></div>`).join('')}
+$('bpHist').addEventListener('click',e=>{const i=e.target.dataset.bi;if(i==null)return;const a=ldK(BKEY);a.splice(+i,1);stK(BKEY,a);bpHist()});
+$('bpAdd').onclick=()=>{const S=+$('bpS').value,D=+$('bpD').value,P=+$('bpP').value||0;
+ if(!(S>=60&&S<=260&&D>=30&&D<=160&&S>D)){toast('Enter upper and lower BP numbers');return}
+ const c=bpCat(S,D);$('bpRes').innerHTML=`<div class="report"><div class="verdict" style="color:var(--${['good','warn','bad'][c.s]})">${S}/${D} · ${c.n}</div><p style="margin:0">${esc(c.t)}</p></div>`;
+ const a=ldK(BKEY);a.unshift({s:S,d:D,p:P,c:c.n,sv:c.s,date:new Date().toLocaleString('en-IN')});stK(BKEY,a.slice(0,100));bpHist();$('bpS').value=$('bpD').value=$('bpP').value=''};
+hHist();bpHist();
+
+update();drawRooms();addEventListener('resize',()=>{drawNScope()});
 }
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
