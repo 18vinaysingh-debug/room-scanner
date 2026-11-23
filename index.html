@@ -360,7 +360,7 @@ function build(){
 function update(){
  drawCards();drawRadar();const b=build();
  const arc=$('ringArc'),L=2*Math.PI*52;
- if(!b){$('score').textContent='--';$('bandTxt').textContent='Not scanned';$('bandTxt').style.color='var(--mute)';arc.setAttribute('stroke-dasharray',`0 ${L}`);
+ if(!b){$('score').textContent='--';$('bandTxt').textContent='Not scanned';$('bandTxt').style.color='var(--mute)';arc.setAttribute('stroke-dasharray',`0 ${L}`);arc.setAttribute('stroke','none');
   $('report').innerHTML='<div class="report"><p class="small" style="margin:0">Tap "Scan this room" or tick the list above to get a conclusion.</p></div>';return}
  const col=`var(--${['good','warn','bad'][b.sev]})`;
  $('score').textContent=b.score;$('bandTxt').textContent=b.band;$('bandTxt').style.color=col;
