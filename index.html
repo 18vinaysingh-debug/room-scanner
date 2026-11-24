@@ -119,6 +119,10 @@ select{font:16px Inter,sans-serif;padding:10px 12px;border:1.5px solid var(--lin
 <div class="wrap">
 <div class="top"><h1>Room Health Scanner</h1><small id="stat"><span class="dot" id="sdot"></span>Ready</small></div>
 
+<div id="inst" class="report" hidden style="margin-bottom:12px;border-color:var(--acc)">
+ <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><b>Install Room Scanner as an app</b><button class="go" id="instBtn" style="width:auto;margin:0;min-height:46px;padding:8px 20px">Install app</button></div>
+ <p class="small" id="instHelp" style="margin:8px 0 0" hidden></p>
+</div>
 <!-- ============ SCAN ============ -->
 <section id="p-scan">
 <input type="text" id="room" placeholder="Room name, e.g. Bedroom" maxlength="40" aria-label="Room name">
@@ -692,6 +696,17 @@ $('bpAdd').onclick=()=>{const S=+$('bpS').value,D=+$('bpD').value,P=+$('bpP').va
  const c=bpCat(S,D);$('bpRes').innerHTML=`<div class="report"><div class="verdict" style="color:var(--${['good','warn','bad'][c.s]})">${S}/${D} · ${c.n}</div><p style="margin:0">${esc(c.t)}</p></div>`;
  const a=ldK(BKEY);a.unshift({s:S,d:D,p:P,c:c.n,sv:c.s,date:new Date().toLocaleString('en-IN')});stK(BKEY,a.slice(0,100));bpHist();$('bpS').value=$('bpD').value=$('bpP').value=''};
 hHist();bpHist();
+
+/* ---------- install prompt ---------- */
+let deferred=null;const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+const ua=navigator.userAgent,inApp=/FBAN|FBAV|Instagram|WhatsApp|Line\/|wv\)|VivoBrowser|HeyTapBrowser|MiuiBrowser|SamsungBrowser/i.test(ua),isIOS=/iPhone|iPad/i.test(ua);
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;if(!standalone){$('inst').hidden=false;$('instBtn').hidden=false;$('instHelp').hidden=true}});
+addEventListener('appinstalled',()=>{$('inst').hidden=true;toast('Installed. Open Room Scanner from your home screen.')});
+$('instBtn').onclick=async()=>{if(deferred){deferred.prompt();const r=await deferred.userChoice;deferred=null;if(r.outcome!=='accepted')toast('Install cancelled')}else{$('instHelp').hidden=false}};
+if(!standalone)setTimeout(()=>{if(deferred)return;$('inst').hidden=false;$('instBtn').hidden=true;$('instHelp').hidden=false;
+ $('instHelp').textContent=isIOS?'On iPhone: open this link in Safari, tap the Share button, then "Add to Home Screen".':
+  inApp?'This browser cannot install apps. Copy the link and open it in Google Chrome, then tap Install app.':
+  'In Chrome tap the ⋮ menu (top right), then "Install app" or "Add to Home screen". If you opened this from WhatsApp, open it in Chrome first.'},3500);
 
 update();drawRooms();addEventListener('resize',()=>{drawNScope()});
 }
