@@ -122,6 +122,7 @@ select{font:16px Inter,sans-serif;padding:10px 12px;border:1.5px solid var(--lin
 <div id="inst" class="report" hidden style="margin-bottom:12px;border-color:var(--acc)">
  <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><b>Install Room Scanner as an app</b><button class="go" id="instBtn" style="width:auto;margin:0;min-height:46px;padding:8px 20px">Install app</button></div>
  <p class="small" id="instHelp" style="margin:8px 0 0" hidden></p>
+ <button id="instCopy" style="margin-top:8px;width:100%">Copy app link (paste it in Chrome)</button>
 </div>
 <!-- ============ SCAN ============ -->
 <section id="p-scan">
@@ -702,11 +703,13 @@ let deferred=null;const standalone=matchMedia('(display-mode: standalone)').matc
 const ua=navigator.userAgent,inApp=/FBAN|FBAV|Instagram|WhatsApp|Line\/|wv\)|VivoBrowser|HeyTapBrowser|MiuiBrowser|SamsungBrowser/i.test(ua),isIOS=/iPhone|iPad/i.test(ua);
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;if(!standalone){$('inst').hidden=false;$('instBtn').hidden=false;$('instHelp').hidden=true}});
 addEventListener('appinstalled',()=>{$('inst').hidden=true;toast('Installed. Open Room Scanner from your home screen.')});
+$('instCopy').onclick=async()=>{try{await navigator.clipboard.writeText('https://18vinaysingh-debug.github.io/room-scanner/');toast('Link copied. Open Chrome and paste it.')}catch(e){toast('18vinaysingh-debug.github.io/room-scanner')}};
+addEventListener('beforeinstallprompt',()=>{$('instCopy').hidden=true});
 $('instBtn').onclick=async()=>{if(deferred){deferred.prompt();const r=await deferred.userChoice;deferred=null;if(r.outcome!=='accepted')toast('Install cancelled')}else{$('instHelp').hidden=false}};
-if(!standalone)setTimeout(()=>{if(deferred)return;$('inst').hidden=false;$('instBtn').hidden=true;$('instHelp').hidden=false;
+if(!standalone)(()=>{if(deferred)return;$('inst').hidden=false;$('instBtn').hidden=true;$('instHelp').hidden=false;
  $('instHelp').textContent=isIOS?'On iPhone: open this link in Safari, tap the Share button, then "Add to Home Screen".':
   inApp?'This browser cannot install apps. Copy the link and open it in Google Chrome, then tap Install app.':
-  'In Chrome tap the ⋮ menu (top right), then "Install app" or "Add to Home screen". If you opened this from WhatsApp, open it in Chrome first.'},3500);
+  'Open this link in the Google Chrome app. Then tap the blue Install app button here, or tap ⋮ (top right) and choose "Add to Home screen".'})();
 
 update();drawRooms();addEventListener('resize',()=>{drawNScope()});
 }
